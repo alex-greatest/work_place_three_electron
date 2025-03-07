@@ -1,0 +1,16 @@
+.root {
+    height: 100%;
+    background-color: #80808013;
+}
+
+.panel_tabs {
+    height: 100% !important; 
+}
+
+.root_paper {
+    padding: 0;
+}
+
+.input_textarea {
+    font-size: 30px;
+}
