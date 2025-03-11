@@ -40,7 +40,7 @@ const UserAuthorization = () => {
     const userAuthorization = {
       login: values.login,
       password: values.password,
-      station: "wp1",
+      station: "wp2",
     };
     window.exchangeServerAPI.requestUserAuthorization(userAuthorization);
     timerId.current = setTimeout(() => {

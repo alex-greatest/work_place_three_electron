@@ -5,7 +5,7 @@ import { getPreloadPath, getUIPath } from './utils/pathResolver.js';
 import { disconnectScanner, scannerConnect } from './service/scaner.js';
 import { storeInitialize } from './utils/store.js';
 import { disconnectPrinter, printerConnect } from './service/exchange_printer.js';
-import { changeTypeLabel, resetOperatorCode, resteMainState } from './utils/state.js';
+import { resetOperatorCode, resteMainState } from './utils/state.js';
 
 const createWindow = () => {
   const mainWindow = new BrowserWindow({
@@ -29,7 +29,6 @@ const createWindow = () => {
     connect(mainWindow);
     resteMainState();
     resetOperatorCode();
-    changeTypeLabel();
   });
 }
 

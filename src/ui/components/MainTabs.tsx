@@ -5,7 +5,7 @@ import { lazy, Suspense, useContext } from "react";
 import Loading from "./Loading.tsx";
 import { context } from "../main.tsx";
 
-const HistoryLazy = lazy(() => import('../screen/History.tsx'));
+const ComponentsList = lazy(() => import('../screen/ComponentsList.tsx'));
 const HistorySearchingLazy = lazy(() => import('../screen/HistorySearching.tsx'));
 
 export default function MainTabs() {
@@ -22,15 +22,15 @@ export default function MainTabs() {
     >
       <Tabs.List>
         <Tabs.Tab value="Main"> Главный экран </Tabs.Tab>
-        <Tabs.Tab value="history"> История </Tabs.Tab>
+        <Tabs.Tab value="components_list"> Компоненты </Tabs.Tab>
         <Tabs.Tab disabled={!isUserAuthorization.value} value="history_search"> История (поиск) </Tabs.Tab>
       </Tabs.List>
       <Tabs.Panel value="Main">
         <MainScreen />
       </Tabs.Panel>
-      <Tabs.Panel value="history" keepMounted={false}>
+      <Tabs.Panel value="components_list" keepMounted={false}>
         <Suspense fallback={<Loading />}>
-          <HistoryLazy />
+          <ComponentsList />
         </Suspense>
       </Tabs.Panel>
       <Tabs.Panel keepMounted={false} value="history_search">

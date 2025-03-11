@@ -17,7 +17,7 @@ import dayjs from "dayjs";
 
 //let timerId: NodeJS.Timeout | null = null;
 
-const History = () => {
+const ComponentsList = () => {
   const contextApp = useContext<StoreApp>(context);
   const timerId = useRef<NodeJS.Timeout | null>(null);
   const isUserAuthorization = contextApp.stateApp.isUserAuthorization;
@@ -25,7 +25,9 @@ const History = () => {
   const isPrinting = contextApp.stateApp.isPrinting;
   const isPrinterConnected = contextApp.stateApp.isPrinterConnected;
   const isUpdatedPrinterHistory = contextApp.stateApp.isUpdatedPrinterHistory;
-  const data = useSignal<BoilerHistoryResponse[]>([] as BoilerHistoryResponse[]);
+  const data = useSignal<BoilerHistoryResponse[]>(
+    [] as BoilerHistoryResponse[]
+  );
   const page = useSignal<number>(0);
   const isLoading = useSignal<boolean>(false);
   const [pagination, setPagination] = useState({
@@ -33,12 +35,18 @@ const History = () => {
     pageSize: 10,
   });
 
-  function responsreeBoilerOrder( _event: Electron.IpcRendererEvent, boilerPage: BoilerPage | ErrorResponse) {
+  function responsreeBoilerOrder(
+    _event: Electron.IpcRendererEvent,
+    boilerPage: BoilerPage | ErrorResponse
+  ) {
     isLoading.value = false;
     timerId.current && clearTimeout(timerId.current);
     timerId.current = null;
     if ((boilerPage as ErrorResponse).message !== undefined) {
-      showError("response_amount_boiler_shift", (boilerPage as ErrorResponse).message);
+      showError(
+        "response_amount_boiler_shift",
+        (boilerPage as ErrorResponse).message
+      );
       return;
     }
     const boielrPageResponse = boilerPage as BoilerPage;
@@ -46,7 +54,11 @@ const History = () => {
     page.value = boielrPageResponse.total;
   }
 
-  function responsePrinHistory( _event: Electron.IpcRendererEvent, error: boolean, errorMessage: string) {
+  function responsePrinHistory(
+    _event: Electron.IpcRendererEvent,
+    error: boolean,
+    errorMessage: string
+  ) {
     if (error) {
       showError("error_print_history", errorMessage);
       return;
@@ -60,15 +72,20 @@ const History = () => {
     timerId.current = setTimeout(() => {
       if (isLoading.value) {
         isLoading.value = false;
-        showError("server_connection", "Нет ответа от сервера при получении истории");
+        showError(
+          "server_connection",
+          "Нет ответа от сервера при получении истории"
+        );
         timerId.current = null;
       }
-    }, 10000)
+    }, 10000);
   }
 
   useEffect(() => {
-    const removeListenerResponseBoilerHistory = window.exchangeServerAPI.onResponseBoilerHistory(responsreeBoilerOrder);
-    const removeListenerResponsePrintHistory = window.exchangePrinter.onResponsePrintHistory(responsePrinHistory);
+    const removeListenerResponseBoilerHistory =
+      window.exchangeServerAPI.onResponseBoilerHistory(responsreeBoilerOrder);
+    const removeListenerResponsePrintHistory =
+      window.exchangePrinter.onResponsePrintHistory(responsePrinHistory);
     return () => {
       removeListenerResponseBoilerHistory();
       removeListenerResponsePrintHistory();
@@ -77,25 +94,37 @@ const History = () => {
   }, []);
 
   useEffect(() => {
-    if (boilerOrderState.value && boilerOrderState.value.id && boilerOrderState.value.id.trim().length === 10) {
+    if (
+      boilerOrderState.value &&
+      boilerOrderState.value.id &&
+      boilerOrderState.value.id.trim().length === 10
+    ) {
       requestBoilerHistory();
     }
   }, [pagination.pageIndex, pagination.pageSize]);
 
   useSignalEffect(() => {
     console.log(boilerOrderState.value.id);
-    if (boilerOrderState.value && boilerOrderState.value.id && boilerOrderState.value.id.trim().length === 10) {
+    if (
+      boilerOrderState.value &&
+      boilerOrderState.value.id &&
+      boilerOrderState.value.id.trim().length === 10
+    ) {
       requestBoilerHistory();
     }
-    if (boilerOrderState.value && boilerOrderState.value.id && boilerOrderState.value.id.trim().length === 0) {
-      data.value = ([] as BoilerHistoryResponse[]);
+    if (
+      boilerOrderState.value &&
+      boilerOrderState.value.id &&
+      boilerOrderState.value.id.trim().length === 0
+    ) {
+      data.value = [] as BoilerHistoryResponse[];
       page.value = 0;
     }
     if (isUpdatedPrinterHistory.value) {
       requestBoilerHistory();
       isUpdatedPrinterHistory.value = false;
     }
-  })
+  });
 
   //should be memoized or stable
   const columns = useMemo<MRT_ColumnDef<BoilerHistoryResponse>[]>(
@@ -115,21 +144,28 @@ const History = () => {
       {
         accessorKey: "dateCreate",
         header: "Дата/время печати",
-        Cell: ({ row }) => (
-          row.original?.dateCreate ? dayjs(row.original.dateCreate).format("DD.MM.YYYY HH:mm:ss") : ""
-        ),
-      }
+        Cell: ({ row }) =>
+          row.original?.dateCreate
+            ? dayjs(row.original.dateCreate).format("DD.MM.YYYY HH:mm:ss")
+            : "",
+      },
     ],
     []
   );
 
   const table = useMantineReactTable({
     columns,
-    data: data.value ?? [] as BoilerHistoryResponse[],
+    data: data.value ?? ([] as BoilerHistoryResponse[]),
     renderTopToolbarCustomActions: () => (
       <Tooltip label="Обновить данные">
-        <ActionIcon onClick={() => boilerOrderState.value && boilerOrderState.value.id && boilerOrderState.value.id.trim().length === 10 
-          && requestBoilerHistory()}>
+        <ActionIcon
+          onClick={() =>
+            boilerOrderState.value &&
+            boilerOrderState.value.id &&
+            boilerOrderState.value.id.trim().length === 10 &&
+            requestBoilerHistory()
+          }
+        >
           <IconRefresh />
         </ActionIcon>
       </Tooltip>
@@ -142,11 +178,15 @@ const History = () => {
       </>
     ),
     renderEmptyRowsFallback: () => (
-      <Flex style={{ height: '200px', 
-        width: '100%', 
-        justifyContent: 'center', 
-        alignItems: 'center' }}> 
-        <p style={{fontSize: "30px"}}>Данные не найдены</p>
+      <Flex
+        style={{
+          height: "100%",
+          width: "100%",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <p style={{ fontSize: "30px" }}>Данные не найдены</p>
       </Flex>
     ),
     paginationDisplayMode: "pages",
@@ -163,14 +203,20 @@ const History = () => {
     enableStickyHeader: true,
     enableStickyFooter: true,
     enableGlobalFilter: false,
-    positionActionsColumn: 'last',
-    mantineTableContainerProps: { style: { maxHeight: '550px' } },
+    positionActionsColumn: "last",
+    mantineTableContainerProps: { style: { width: '100%', maxHeight: "450px" } },
+    mantinePaperProps: { style: { width: '100%' } },
     onPaginationChange: setPagination, //hoist pagination state to your state when it changes internally
-    state: { 
-      pagination, 
+    state: {
+      pagination,
       isLoading: isLoading.value,
-      showProgressBars: isLoading.value, }, //pass the pagination state to the table
-    initialState: { pagination: { pageSize: 10, pageIndex: 1 }, showColumnFilters: true,  density: 'xs' },
+      showProgressBars: isLoading.value,
+    }, //pass the pagination state to the table
+    initialState: {
+      pagination: { pageSize: 10, pageIndex: 1 },
+      showColumnFilters: true,
+      density: "xs",
+    },
     rowCount: page.value ?? 0,
     mantinePaginationProps: {
       rowsPerPageOptions: ["10"],
@@ -178,9 +224,18 @@ const History = () => {
     },
     localization: MRT_Localization_RU,
     renderRowActions: ({ row }) => (
-      <Box style={{ display: 'flex', flexWrap: 'nowrap', gap: '8px' }}>
-        <Button  onClick={() => window.exchangePrinter.requestPrintHistory(row.original)} 
-        disabled={!isPrinterConnected.value || isPrinting.value === true || !isUserAuthorization.value} style={{height: '23px'}}>
+      <Box style={{ display: "flex", flexWrap: "nowrap", gap: "8px" }}>
+        <Button
+          onClick={() =>
+            window.exchangePrinter.requestPrintHistory(row.original)
+          }
+          disabled={
+            !isPrinterConnected.value ||
+            isPrinting.value === true ||
+            !isUserAuthorization.value
+          }
+          style={{ height: "23px" }}
+        >
           Печать
         </Button>
       </Box>
@@ -188,12 +243,10 @@ const History = () => {
   });
 
   return (
-    <Flex style={{ width: "100%", height: "80%" }} mt={25} justify="center">
-      <div style={{ width: "80%" }}>
-        <MantineReactTable table={table} />
-      </div>
+    <Flex style={{ width: "100%" }} mt={10} justify="center">
+      <MantineReactTable table={table} />
     </Flex>
   );
 };
 
-export default History;
+export default ComponentsList;

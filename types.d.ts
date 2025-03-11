@@ -1,31 +1,6 @@
-type Statistics = {
-  cpuUsage: number;
-  ramUsage: number;
-  storageUsage: number;
-};
-
-type StaticData = {
-  totalStorage: number;
-  cpuModel: string;
-  totalMemoryGB: number;
-};
-
-type View = "CPU" | "RAM" | "STORAGE";
-
-type FrameWindowAction = "CLOSE" | "MAXIMIZE" | "MINIMIZE";
-
-type EventPayloadMapping = {
-  statistics: Statistics;
-  getStaticData: StaticData;
-  changeView: View;
-  sendFrameAction: FrameWindowAction;
-};
-
 type ErrorResponse = {
   message: string;
 }
-
-type UnsubscribeFunction = () => void;
 
 type UserResponse = {
   username: string;
@@ -41,58 +16,53 @@ interface Shift {
   timeEnd: string;
 }
 
-interface Boiler {
-  serialNumber: string;
-  amountBoilerPrint: number;
-  amountBoilerShift: number;
-}
-
-interface BoilerIdUniqueRequest {
-  userCode: number,
-  id: string,
-  numberShift: number
-}
-
 interface BoilerTypeCycle {
   typeName: string;
   article: string;
-}
-
-interface BoilerHistoryResponse {
-  serialNumber: string;
-  boilerTypeCycle: BoilerTypeCycle;
-  dateCreate: string; // ISO date string
-}
-
-interface PageInfo {
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
-}
-
-interface BoilerPage {
-  total: number;
-  content: BoilerResponse[];
-}
-
-interface BoilerHistoryRequest {
-  id: string;
-  page: number;
-  size: number;
-  destinationResponse: string;
-  destinationResponseError: string;
-}
-
-interface BoilerPage {
-  content: BoilerHistoryResponse[];
-  pageInfo: PageInfo;
 }
 
 interface UserRequestAuthorization {
   login: string;
   password: string;
   station: string;
+}
+
+interface BoilerRequestWpTwo {
+  numberShift: number;
+  userCode: number;
+  serialNumber: string;
+  stationName: string;
+  prevStationName: string;
+  isAllowStart: boolean;
+}
+
+interface ComponentTypeDto {
+  id: number;
+  name: string;
+}
+
+interface ComponentSetDto {
+  id: number;
+  componentType: ComponentTypeDto;
+  value: string;
+}
+
+interface ComponentBindingResponse {
+  id: number;
+  componentType: ComponentTypeDto;
+  order: number;
+}
+
+interface BoilerTypeStation {
+  id: number;
+  typeName: string;
+  article: string;
+}
+
+interface BoilerResponseWpTwo {
+  boilerTypeStation: BoilerTypeStation;
+  componentSetDtoList: ComponentSetDto[];
+  componentBindingResponses: ComponentBindingResponse[];
 }
 
 type callbackBoolean = (_event: Electron.IpcRendererEvent, value: boolean) => void;
@@ -107,6 +77,8 @@ type callbackBoilerHistory = (_event: Electron.IpcRendererEvent, boilers: Boiler
 type callbackBooleanError = (_event: Electron.IpcRendererEvent, error: boolean, errorMessage: string) => void;
 type callbackNumber = (_event: Electron.IpcRendererEvent, value: number) => void;
 type callbackUserAuthorization = (_event: Electron.IpcRendererEvent, userRequestAuthorization: UserRequestAuthorization) => void;
+type callbackEmpty = (_event: Electron.IpcRendererEvent) => void;
+type callbackBoilerResponseWpTwo = (_event: Electron.IpcRendererEvent, boilerResponseWpTwo: BoilerResponseWpTwo|ErrorResponse) => void;
 
 interface IExchangeServerAPI {
   requestGetLastBoilerOrderAfterClose: () => void;
@@ -114,8 +86,11 @@ interface IExchangeServerAPI {
   requestOperatorCode: (code: number) => void;
   onResponseOperatorCode: (callback: callbackUserResponse) => () => void;
   onResponseShift: (callback: callbackShiftResponse) => () => void;
-  onResponseBoiierOrder: (callback: callbackCanban) => () => void;
-  onRequestBoilerOrder: (callback: callbackBoolean) => () => void;
+
+  onResponseComponents: (callback: callbackBoilerResponseWpTwo) => () => void;
+
+
+  onRequestBoilerOrder: (callback: (_event: Electron.IpcRendererEvent) => void) => () => void;
   onResponseAmountBoiler: (callback: callbackShiftResponse) => () => void;
   onResponseAmountBoilerPrintedOrder: (callback: callbackAmountOrderPrintedResponse) => () => void;
   requestPrint: () => void;
@@ -134,6 +109,9 @@ interface IExchangeScanner {
     onUpdateConnectionScannerState: (callback: callbackBoolean) => () => void;
     onResponseScanError: (callback: callbackString) => () => void;
     requestScanManual: (isScan: boolean) => () => void;
+    onResponseComponentsWait: (callback: callbackEmpty) => () => void;
+
+
     onResponseScanManual: (callback: callbackString) => () => void;
     onResponseScanManualError: (callback: callbackString) => () => void;
 }
@@ -144,44 +122,10 @@ interface ISyncState {
   requestChangeTypeLabel: (typeLabel: string) => void;
 }
 
-interface IExchangePrinter {
-  onUpdateConnectionPrinterState: (callback: callbackBoolean) => () => void;
-  requestOperatorCode: (code: number) => void;
-  onResponseOperatorCode: (callback: callbackUserResponse) => () => void;
-  onResponseShift: (callback: callbackShiftResponse) => () => void;
-  onResponseBoiierOrder: (callback: callbackCanban) => () => void;
-  onRequestBoilerOrder: (callback: callbackBoolean) => () => void;
-  requestPrintHistory: (boilerResponse: BoilerHistoryResponse) => void;
-  onResponsePrintHistory: (callback: callbackBooleanError) => () => void;
-}
-
 interface Window {
   exchangeServerAPI: IExchangeServerAPI;
   exchangeScanner: IExchangeScanner;
-  exchangePrinter: IExchangePrinter;
   syncState: ISyncState;
-}
-
-interface Canban {
-  id: string;
-  numberOrder: number|null;
-  article: string;
-  amountBoilerOrder: number;
-  dateScan: dayjs|null;
-  code: string;
-  userCode: number;
-  numberShift: number;
-}
-
-interface BoilerOrder {
-  id: string,
-  isDataExists: boolean;
-  orderNumber: number;
-  article: string;
-  amountBoilerOrder: number;
-  amountBoilerPrint: number;
-  codeScan: string;
-  dateScan: string; 
 }
 
 interface StoreApp {
@@ -196,30 +140,20 @@ interface StateRender {
   isPrinterConnected: Signal<boolean>;
   textHelper: Signal<string>;
   isGetCode: Signal<boolean>;
-  boilerOrder: Signal<BoilerOrder>;
-  isGetUniqueBoilerOrder: Signal<boolean>;
-  isGetBoilerOrder: Signal<boolean>;
-  isLoadingBoilerOrder: Signal<boolean>;
-  isPrinting: Signal<boolean>;
-  boiler: Signal<Boiler>;
-  amountBoilerPrinted: Signal<number>;
-  amountSendPrintedBarcode: Signal<number>;
-  currentSendAmountPrintedBarcode: Signal<number>;
-  isUpdatedPrinterHistory: Signal<boolean>;
+  isGetBoilerResponseWpTwo: Signal<boolean>;
+  boilerResponseWpTwo: Signal<BoilerResponseWpTwo>;
   isUserAuthorization: Signal<boolean>;
   shift: Signal<number>,
   amountBoilerShift: Signal<number>
+  isLoadingComponents: Signal<boolean>;
 }
 
 interface StateMain {
   user: UserResponse;
   isGetCode: boolean;
-  isGetUniqueBoilerOrder: boolean;
-  boilerOrder: BoilerOrder;
-  isGetBoilerOrder: boolean;
+  isGetBoilerResponseWpTwo: boolean;
   shiftNumber: number;
   isServerConnected: boolean;
   isScannerConnected: boolean;
   isPrinterConnected: boolean;
-  typelabel: string;
 }

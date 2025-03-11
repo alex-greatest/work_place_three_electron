@@ -1,18 +1,15 @@
 import { Flex } from "@mantine/core";
-import ShiftNumber from "../components/main/ShiftNumber";
-import OperatorCode from "../components/main/OperatorCode";
-import Canban from "../components/main/BoilerOrder";
-import PrintBarcode from "../components/main/PrintBarcode";
+import MainData from "../components/main/MainData";
+import ComponentScanned from "../components/main/ComponentScanned";
 
 export default function MainScreen() {
-
   return (
     <Flex
       direction="column"
       style={{
         width: "100%",
         height: "100%",
-        padding: "15px 20px 20px 20px",
+        padding: "5px 20px 20px 20px",
       }}
     >
       <Flex
@@ -23,9 +20,9 @@ export default function MainScreen() {
           justifyContent: "center",
         }}
       >
-        <Flex gap="0.2em" direction="column">
-          <ShiftNumber />
-          <OperatorCode />
+        <Flex style={{ width: "100%" }} direction="column">
+          <MainData />
+          <ComponentScanned />
         </Flex>
       </Flex>
     </Flex>

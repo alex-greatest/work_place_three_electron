@@ -2,10 +2,9 @@ import { Client, IStompSocket, IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { BrowserWindow, ipcMain } from 'electron';
 import log from 'electron-log';
-import { canbanEvent, stateMain } from '../utils/state.js';
+import { serialNumberEvent, stateMain } from '../utils/state.js';
 
 let mainWindow: BrowserWindow;
-let timerPrintedError: NodeJS.Timeout | null = null;
 
 const client = new Client({
   brokerURL: 'ws://localhost:8080/ws',
@@ -30,12 +29,12 @@ export function connect(_mainWindow: BrowserWindow) {
     subscribeError(client);
     client?.connected && client.publish({
       destination: "/app/shift/made/boiler/get_info/request",
-      body: "wp1",
+      body: "wp2",
       skipContentLengthHeader: true,
     });
     client?.connected && client.publish({
       destination: "/app/shift/get_info/request",
-      body: "wp1",
+      body: "wp2",
       skipContentLengthHeader: true,
     });
   };
@@ -53,9 +52,6 @@ export function connect(_mainWindow: BrowserWindow) {
   requestAmountBoileramountShiftMadeBoiler(client);
   requestShift(client);
   requestOperatorCode(client);
-  requestPrint(client);
-  requestBoilerHistory();
-  requestBoilerHistoryManual();
   requestUserAuthorization();
   requestLastBoilerOrder();
 }
@@ -67,44 +63,46 @@ export function disconnectServer() {
 }
 
 function subscribe(client: Client) {
-  client.subscribe('/message/wp1/user/get_info/response', (message) => responseOperatorCode(message));
-  client.subscribe('/message/wp1/shift/get_info/response', (message) => responseShift(message));
-  client.subscribe('/message/boiler/order/get/response', (message) => responseBoilerOrder(message));
-  client.subscribe('/message/boiler/order/add/response', (message) => responseUniqueBoilerOrder(message));
+  client.subscribe('/message/wp2/user/get_info/response', (message) => responseOperatorCode(message));
+  client.subscribe('/message/wp2/user/authorization/response', (message) => responseUserAuthorization(message));
+  client.subscribe('/message/wp2/shift/get_info/response', (message) => responseShift(message));
+  client.subscribe('/message/wp2/shift/amount/made/boiler/get_info/response', (message) => responseAmountBoilerShift(message));
+  client.subscribe('/message/station/wp2/operation/response', (message) => responseComponents(message));
+
   client.subscribe('/message/current/shift', (message) => resetShift(message));
-  client.subscribe('/message/wp1/shift/amount/made/boiler/get_info/response', (message) => responseAmountBoilerShift(message));
-  client.subscribe('/message/boiler/wp1/print/response', (message) => responsePrint(message));
-  client.subscribe('/message/boiler/history/get_info/response', (message) => responseBoilerHistory(message));
-  client.subscribe('/message/boiler/history/manual/get_info/response', (message) => responseBoilerHistoryManual(message));
-  client.subscribe('/message/wp1/user/authorization/response', (message) => responseUserAuthorization(message));
-  client.subscribe('/message/boiler/order/last/get/response', (message) => responseLastBoilerOrder(message));
 }
 
 function subscribeError(client: Client) {
-  client.subscribe('/message/wp1/user/get_info/errors', (message) => responseError(message, (messageResponse: string) => {
+  client.subscribe('/message/wp2/user/get_info/errors', (message) => responseError(message, (messageResponse: string) => {
     mainWindow.webContents.send("response_operator_code", {message: messageResponse} as ErrorResponse);
   }));
-  client.subscribe('/message/wp1/shift/get_info/errors', (message) => responseError(message, (messageResponse: string) => {
+  client.subscribe('/message/wp2/shift/get_info/errors', (message) => responseError(message, (messageResponse: string) => {
     mainWindow.webContents.send("response_shift", {message: messageResponse} as ErrorResponse);
   }));
-  client.subscribe('/message/boiler/order/get/errors', (message) => responseError(message, (messageResponse: string) => {  
-    mainWindow.webContents.send("response_boiler_order", {message: messageResponse} as ErrorResponse);
-  }));
-  client.subscribe('/message/wp1/shift/amount/made/boiler/get_info/errors', (message) => responseError(message, (messageResponse: string) => {  
+  client.subscribe('/message/wp2/shift/amount/made/boiler/get_info/errors', (message) => responseError(message, (messageResponse: string) => {  
     mainWindow.webContents.send("response_amount_made_boiler_shift", {message: messageResponse} as ErrorResponse);
   }));
-  client.subscribe('/message/boiler/wp1/print/errors', (message) => responseError(message, (messageResponse: string) => {  
+  client.subscribe('/message/boiler/wp2/print/errors', (message) => responseError(message, (messageResponse: string) => {  
     mainWindow.webContents.send("response_print_server", {message: messageResponse} as ErrorResponse);
   }));
+  client.subscribe('/message/wp2/user/authorization/errors', (message) => responseError(message, (messageResponse: string) => {
+    mainWindow.webContents.send("response_user_authorization", {message: messageResponse} as ErrorResponse);
+  }));
+  client.subscribe('/message/station/wp2/operation/errors', (message) => responseError(message, (messageResponse: string) => {  
+    mainWindow.webContents.send("response_components", {message: messageResponse} as ErrorResponse);
+  }));
+
+
+
+
+
   client.subscribe('/message/boiler/history/get_info/errors', (message) => responseError(message, (messageResponse: string) => {  
     mainWindow.webContents.send("response_boiler_history", {message: messageResponse} as ErrorResponse);
   }));
   client.subscribe('/message/boiler/history/manual/get_info/errors', (message) => responseError(message, (messageResponse: string) => {  
     mainWindow.webContents.send("response_boiler_history_manual", {message: messageResponse} as ErrorResponse);
   }));
-  client.subscribe('/message/wp1/user/authorization/errors', (message) => responseError(message, (messageResponse: string) => {
-    mainWindow.webContents.send("response_user_authorization", {message: messageResponse} as ErrorResponse);
-  }));
+
   client.subscribe('/message/boiler/order/add/errors', (message) => responseError(message, (messageResponse: string) => {
     mainWindow.webContents.send("response_unique_id_boiler_order", {message: messageResponse} as ErrorResponse);
   }));
@@ -117,7 +115,7 @@ function requestShift(client: Client) {
   ipcMain.handle("request_shift", (_event: Electron.IpcMainInvokeEvent) => {
     client?.connected && client.publish({
       destination: "/app/shift/get_info/request",
-      body: "wp1",
+      body: "wp2",
       skipContentLengthHeader: true,
     });
   });
@@ -132,7 +130,7 @@ function requestAmountBoileramountShiftMadeBoiler(client: Client) {
   ipcMain.handle("request_amount_boiler", (_event: Electron.IpcMainInvokeEvent) => {
     client?.connected && client.publish({
       destination: "/app/shift/made/boiler/get_info/request",
-      body: "wp1",
+      body: "wp2",
       skipContentLengthHeader: true,
     });
   });
@@ -147,7 +145,7 @@ function requestOperatorCode(client: Client) {
   ipcMain.handle("request_operator_code", (_event: Electron.IpcMainInvokeEvent, code: number) => {
     client?.connected && client.publish({
       destination: '/app/user/get_info/request',
-      body: JSON.stringify({code: code, station: "wp1"}),
+      body: JSON.stringify({code: code, station: "wp2"}),
       skipContentLengthHeader: true,
     });
   });
@@ -162,49 +160,26 @@ function responseOperatorCode(message: IMessage) {
   }
 }
 
-canbanEvent.on("send_boiler", (canbanRequest: Canban) => {
-  mainWindow.webContents.send("request_boiler_order", true);
+serialNumberEvent.on("send_serial_number", (serialNumber: string) => {
+  const boilerRequest: BoilerRequestWpTwo = {
+    numberShift: stateMain.shiftNumber,
+    userCode: stateMain.user.code,
+    serialNumber: serialNumber,
+    stationName: "wp2",
+    prevStationName: "wp1",
+    isAllowStart: false
+  };
   client?.connected && client.publish({
-    destination: '/app/boiler/order/get/request',
-    body: JSON.stringify(canbanRequest),
+    destination: '/app/station/wp2/start/operation/request',
+    body: JSON.stringify(boilerRequest),
     skipContentLengthHeader: true,
   });
 });
 
-
-canbanEvent.on("send_unique_boiler", (boilerIdUniqueRequest: BoilerIdUniqueRequest) => {
-  mainWindow.webContents.send("request_boiler_order", true);
-  client?.connected && client.publish({
-    destination: '/app/boiler/order/add/request',
-    body: JSON.stringify(boilerIdUniqueRequest),
-    skipContentLengthHeader: true,
-  });
-});
-
-function responseBoilerOrderUi(boilerOrder: BoilerOrder) {
-  stateMain.isGetBoilerOrder = true;
-  stateMain.isGetUniqueBoilerOrder = true;
-  stateMain.boilerOrder = boilerOrder;
-  console.log(boilerOrder);
-  mainWindow.webContents.send("response_boiler_order", stateMain.boilerOrder);
-  mainWindow.webContents.send("response_amount_boiler_printer_order", stateMain.boilerOrder.amountBoilerPrint);
-}
-
-function responseBoilerOrder(message: IMessage) {
-  const boilerOrder: BoilerOrder = JSON.parse(message.body);
-  responseBoilerOrderUi(boilerOrder);
-}
-
-function responseUniqueBoilerOrder(message: IMessage) {
-  const boilerOrder: BoilerOrder = JSON.parse(message.body);
-  if (boilerOrder.isDataExists) {
-    responseBoilerOrderUi(boilerOrder);
-    return;
-  }
-  stateMain.isGetUniqueBoilerOrder = true;
-  stateMain.boilerOrder.id = boilerOrder.id;
-  stateMain.boilerOrder.dateScan = boilerOrder.dateScan;
-  mainWindow.webContents.send("response_unique_id_boiler_order", stateMain.boilerOrder);
+function responseComponents(message: IMessage) {
+  const boilerResponseWpTwo: BoilerResponseWpTwo = JSON.parse(message.body);
+  stateMain.isGetBoilerResponseWpTwo = true;
+  mainWindow.webContents.send("response_components", boilerResponseWpTwo);
 }
 
 function responseError(message: IMessage, sender: (message: string) => void) {
@@ -214,89 +189,9 @@ function responseError(message: IMessage, sender: (message: string) => void) {
 }
 
 function resetShift(message: IMessage) {
+  console.log("dasda1wwwww");
   const shiftNumber = Number(message.body);
   mainWindow.webContents.send("response_shift", shiftNumber);
-}
-
-function requestPrint(client: Client) {
-  ipcMain.handle("request_printer_server", (_event: Electron.IpcMainInvokeEvent) => {
-    client?.connected && client.publish({
-      destination: "/app/boiler/wp1/print/request",
-      body: JSON.stringify({id: stateMain.boilerOrder.id, orderCode: stateMain.boilerOrder.orderNumber, userCode: stateMain.user.code, 
-        numberShift: stateMain.shiftNumber}),
-      skipContentLengthHeader: true,
-    });
-  });
-}
-
-function responsePrint(message: IMessage) {
-  const boiler: Boiler = JSON.parse(message.body);
-  if (stateMain.isPrinterConnected) {
-    timerPrintedError = setTimeout(() => {
-      log.error("Нет ответа от принтера. Не удалось распечатать этикетку");
-      mainWindow.webContents.send("response_print_server", {message: "Не удалось распечатать этикетку"} as ErrorResponse);
-      timerPrintedError = null;
-    }, 10000);
-    canbanEvent.emit("run_print", boiler);
-    return; 
-  }
-  log.error("Ошибка при отправке данных на печать. Принтер не подключен");
-  mainWindow.webContents.send("response_print_server", {message: "Нет связи с принтером печать невозможно"} as ErrorResponse);
-}
-
-canbanEvent.on("printer_response", (boiler: Boiler) => {
-  timerPrintedError && clearTimeout(timerPrintedError);
-  timerPrintedError = null;
-  mainWindow.webContents.send("response_amount_made_boiler_shift", boiler.amountBoilerShift);
-  mainWindow.webContents.send("response_print_server", boiler);
-});
-
-function requestBoilerHistoryServer(id: string, pageNumber: number, destinationResponse: string, destinationResponseError: string) {
-  const boilerRequest: BoilerHistoryRequest = {
-    id: id, 
-    page: pageNumber,
-    size: 10,
-    destinationResponse,
-    destinationResponseError
-  };
-  client?.connected && client.publish({
-    destination: '/app/boiler/list/get_info/request',
-    body: JSON.stringify(boilerRequest),
-    skipContentLengthHeader: true,
-  });
-}
-
-function requestBoilerHistory() {
-  ipcMain.handle("request_boiler_history", (_event: Electron.IpcMainInvokeEvent, pageNumber: number) => {
-    if (stateMain.boilerOrder.id && stateMain.boilerOrder.id.trim().length === 0) {
-      log.error("Не удалось получить историю заказа. Заказ ещё не выбран");
-      return;
-    }
-    requestBoilerHistoryServer(stateMain.boilerOrder.id, pageNumber, '/message/boiler/history/get_info/response', '/message/boiler/history/get_info/errors');
-  });
-}
-
-function requestBoilerHistoryManual() {
-  ipcMain.handle("request_boiler_history_manual", (_event: Electron.IpcMainInvokeEvent, id: string, pageNumber: number) => {
-    if (!id && id.trim().length > 0) {
-      log.error("Не удалось получить историю заказа. Пустой иденктификатор");
-      return;
-    }
-    requestBoilerHistoryServer(id, 
-      pageNumber, 
-      '/message/boiler/history/manual/get_info/response', 
-      '/message/boiler/history/manual/get_info/errors');
-  });
-}
-
-function responseBoilerHistory(message: IMessage) {
-  const boilerPage: BoilerPage = JSON.parse(message.body);
-  mainWindow.webContents.send("response_boiler_history", boilerPage);
-}
-
-function responseBoilerHistoryManual(message: IMessage) {
-  const boilerPage: BoilerPage = JSON.parse(message.body);
-  mainWindow.webContents.send("response_boiler_history_manual", boilerPage);
 }
 
 function requestUserAuthorization() {
@@ -324,11 +219,4 @@ function requestLastBoilerOrder() {
       skipContentLengthHeader: true,
     });
   });
-}
-
-function responseLastBoilerOrder(message: IMessage) {
-  const boilerOrder: BoilerOrder = JSON.parse(message.body);
-  stateMain.boilerOrder = boilerOrder;
-  mainWindow.webContents.send("response_last_boiler_order", boilerOrder);
-  mainWindow.webContents.send("response_amount_boiler_printer_order", stateMain.boilerOrder.amountBoilerPrint);
 }

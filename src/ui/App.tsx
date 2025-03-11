@@ -100,7 +100,6 @@ export default function App() {
           <Flex align="center" style={{ width: "100%", height: "5%" }} gap={"1em"}>
             <ServerIndicator />
             <ScannerIndicator />
-            <PrinterIndicator />
             <UserAuthorization />
           </Flex>
           <Paper

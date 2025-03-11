@@ -9,21 +9,14 @@ export function createAppStore(): StoreApp {
     isPrinterConnected: signal<boolean>(false),
     isGetCode: signal<boolean>(false), 
     textHelper: signal<string>("Введите код оператора"),
-    boilerOrder: signal<BoilerOrder>({ id: "", isDataExists: false, orderNumber: 0, article: "", amountBoilerOrder: 0,
-       amountBoilerPrint: 0, codeScan: "",  dateScan: "" }),
-    isGetUniqueBoilerOrder: signal<boolean>(false),
-    isGetBoilerOrder: signal<boolean>(false),
-    isPrinting: signal<boolean>(false),
-    isLoadingBoilerOrder: signal<boolean>(false),
-    boiler: signal<Boiler>({serialNumber: "", amountBoilerPrint: 0, amountBoilerShift: 0}),
-    amountBoilerPrinted: signal<number>(0),
-    currentSendAmountPrintedBarcode: signal<number>(0),
-    amountSendPrintedBarcode: signal<number>(1),
-    isUpdatedPrinterHistory: signal<boolean>(false),
     isUserAuthorization: signal<boolean>(false),
     shift: signal<number>(0),
-    amountBoilerShift: signal<number>(0)
-    
+    amountBoilerShift: signal<number>(0),
+    isGetBoilerResponseWpTwo: signal<boolean>(false),
+    boilerResponseWpTwo: signal<BoilerResponseWpTwo>({boilerTypeStation: { id: 0, typeName: "", article: ""},
+      componentSetDtoList: [] as ComponentSetDto[],
+      componentBindingResponses: [] as ComponentBindingResponse[]}),
+    isLoadingComponents: signal<boolean>(false),
   });
 
   return { stateApp };
