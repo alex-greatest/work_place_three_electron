@@ -65,6 +65,11 @@ interface BoilerResponseWpTwo {
   componentBindingResponses: ComponentBindingResponse[];
 }
 
+interface BoilerErrorRoute {
+  error: string;
+  isRouteError: boolean;
+}
+
 type callbackBoolean = (_event: Electron.IpcRendererEvent, value: boolean) => void;
 type callbackUserResponse = (_event: Electron.IpcRendererEvent, userResponse: UserResponse|ErrorResponse) => void;
 type callbackShiftResponse = (_event: Electron.IpcRendererEvent, shiftNumber: number|ErrorResponse) => void;
@@ -78,7 +83,7 @@ type callbackBooleanError = (_event: Electron.IpcRendererEvent, error: boolean, 
 type callbackNumber = (_event: Electron.IpcRendererEvent, value: number) => void;
 type callbackUserAuthorization = (_event: Electron.IpcRendererEvent, userRequestAuthorization: UserRequestAuthorization) => void;
 type callbackEmpty = (_event: Electron.IpcRendererEvent) => void;
-type callbackBoilerResponseWpTwo = (_event: Electron.IpcRendererEvent, boilerResponseWpTwo: BoilerResponseWpTwo|ErrorResponse) => void;
+type callbackBoilerResponseWpTwo = (_event: Electron.IpcRendererEvent, boilerResponseWpTwo: BoilerResponseWpTwo|BoilerErrorRoute) => void;
 
 interface IExchangeServerAPI {
   requestGetLastBoilerOrderAfterClose: () => void;
@@ -86,21 +91,12 @@ interface IExchangeServerAPI {
   requestOperatorCode: (code: number) => void;
   onResponseOperatorCode: (callback: callbackUserResponse) => () => void;
   onResponseShift: (callback: callbackShiftResponse) => () => void;
-
   onResponseComponents: (callback: callbackBoilerResponseWpTwo) => () => void;
-
-
-  onRequestBoilerOrder: (callback: (_event: Electron.IpcRendererEvent) => void) => () => void;
-  onResponseAmountBoiler: (callback: callbackShiftResponse) => () => void;
-  onResponseAmountBoilerPrintedOrder: (callback: callbackAmountOrderPrintedResponse) => () => void;
-  requestPrint: () => void;
-  onResponsePrint: (callback: callbackPrintResponse) => () => void;
-  requestBoilerHistory: (pageNumber: number) => void;
-  onResponseBoilerHistory: (callback: callbackBoilerHistory) => () => void;
-  requestBoilerHistoryManual: (id: string, pageNumber: number) => void;
-  onResponseBoilerHistoryManual: (callback: callbackBoilerHistory) => () => void;
-  requestUserAuthorization: (userRequestAuthorization: UserRequestAuthorization) => void;
   onResponseUserAuthorization: (callback: callbackUserResponse) => () => void;
+  requestUserAuthorization: (userRequestAuthorization: UserRequestAuthorization) => void;
+  requestComponents: (serialN) 
+
+
   onResponseUniqueIdBoiierOrder: (callback: callbackBoilerOrder) => () => void;
   onResponseLastBoiierOrder: (callback: callbackCanban) => () => void;
 }
@@ -110,10 +106,6 @@ interface IExchangeScanner {
     onResponseScanError: (callback: callbackString) => () => void;
     requestScanManual: (isScan: boolean) => () => void;
     onResponseComponentsWait: (callback: callbackEmpty) => () => void;
-
-
-    onResponseScanManual: (callback: callbackString) => () => void;
-    onResponseScanManualError: (callback: callbackString) => () => void;
 }
 
 interface ISyncState {
@@ -157,3 +149,4 @@ interface StateMain {
   isScannerConnected: boolean;
   isPrinterConnected: boolean;
 }
+

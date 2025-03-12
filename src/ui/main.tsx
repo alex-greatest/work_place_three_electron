@@ -7,6 +7,7 @@ import { createAppStore } from "./service/store.ts";
 import "@mantine/notifications/styles.css";
 import "./css/index.css";
 import { Notifications } from "@mantine/notifications";
+import { ModalsProvider } from '@mantine/modals';
 
 const appStore = createAppStore();
 export const context = createContext<StoreApp>(appStore);
@@ -20,8 +21,10 @@ root.render(
   <StrictMode>
     <context.Provider value={appStore}>
       <MantineProvider>
-        <Notifications />
-        <App />
+        <ModalsProvider>
+          <Notifications />
+          <App />
+        </ModalsProvider>
       </MantineProvider>
     </context.Provider>
   </StrictMode>

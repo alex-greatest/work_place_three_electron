@@ -19,7 +19,7 @@ contextBridge.exposeInMainWorld("exchangeServerAPI", {
     return () => { ipcRenderer.removeListener("response_shift", listener); };
   },
   onResponseComponents: (callback: callbackBoilerResponseWpTwo) => {
-    const listener = (_event: Electron.IpcRendererEvent, value: BoilerResponseWpTwo | ErrorResponse) => callback(_event, value);
+    const listener = (_event: Electron.IpcRendererEvent, value: BoilerResponseWpTwo | BoilerErrorRoute) => callback(_event, value);
     ipcRenderer.on("response_components", listener);
     return () => { ipcRenderer.removeListener("response_components", listener); };
   },
@@ -39,38 +39,13 @@ contextBridge.exposeInMainWorld("exchangeServerAPI", {
     return () => { ipcRenderer.removeListener("response_amount_boiler_printer_order", listener); };
   },
   requestPrint: () => ipcRenderer.invoke("request_printer_server"),
-  onResponsePrint: (callback: callbackBoilerResponse) => {
-    const listener = (_event: Electron.IpcRendererEvent, value: Boiler | ErrorResponse) => callback(_event, value);
-    ipcRenderer.on("response_print_server", listener);
-    return () => { ipcRenderer.removeListener("response_print_server", listener); };
-  },
   requestBoilerHistory: (pageNumber: number) => ipcRenderer.invoke("request_boiler_history", pageNumber),
-  onResponseBoilerHistory: (callback: callbackBoilerHistory) => {
-    const listener = (_event: Electron.IpcRendererEvent, value: BoilerPage | ErrorResponse) => callback(_event, value);
-    ipcRenderer.on("response_boiler_history", listener);
-    return () => { ipcRenderer.removeListener("response_boiler_history", listener); };
-  },
   requestBoilerHistoryManual: (id: string, pageNumber: number) => ipcRenderer.invoke("request_boiler_history_manual", id, pageNumber),
-  onResponseBoilerHistoryManual: (callback: callbackBoilerHistory) => {
-    const listener = (_event: Electron.IpcRendererEvent, value: BoilerPage | ErrorResponse) => callback(_event, value);
-    ipcRenderer.on("response_boiler_history_manual", listener);
-    return () => { ipcRenderer.removeListener("response_boiler_history_manual", listener); };
-  },
   requestUserAuthorization: (userAuthorization: UserRequestAuthorization) => ipcRenderer.invoke("request_user_authorization", userAuthorization),
   onResponseUserAuthorization: (callback: callbackUserResponse) => {
     const listener = (_event: Electron.IpcRendererEvent, value: UserResponse | ErrorResponse) => callback(_event, value);
     ipcRenderer.on("response_user_authorization", listener);
     return () => { ipcRenderer.removeListener("response_user_authorization", listener); };
-  },
-  onResponseUniqueIdBoiierOrder: (callback: callbackBoilerOrder) => {
-    const listener = (_event: Electron.IpcRendererEvent, value: BoilerOrder | ErrorResponse) => callback(_event, value);
-    ipcRenderer.on("response_unique_id_boiler_order", listener);
-    return () => { ipcRenderer.removeListener("response_unique_id_boiler_order", listener); };
-  },
-  onResponseLastBoiierOrder: (callback: callbackBoilerOrder) => {
-    const listener = (_event: Electron.IpcRendererEvent, value: BoilerOrder | ErrorResponse) => callback(_event, value);
-    ipcRenderer.on("response_last_boiler_order", listener);
-    return () => { ipcRenderer.removeListener("response_last_boiler_order", listener); };
   },
 });
 
@@ -97,7 +72,7 @@ contextBridge.exposeInMainWorld("exchangeScanner", {
     return () => { ipcRenderer.removeListener("response_scan_manual_error", listener); };
   },
   onResponseComponentsWait: (callback: callbackBoilerResponseWpTwo) => {
-    const listener = (_event: Electron.IpcRendererEvent, value: BoilerResponseWpTwo | ErrorResponse) => callback(_event, value);
+    const listener = (_event: Electron.IpcRendererEvent, value: BoilerResponseWpTwo | BoilerErrorRoute) => callback(_event, value);
     ipcRenderer.on("response_components", listener);
     return () => { ipcRenderer.removeListener("response_components", listener); };
   },

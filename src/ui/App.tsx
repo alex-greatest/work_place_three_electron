@@ -6,52 +6,31 @@ import { useContext, useEffect, useRef } from "react";
 import { context } from "./main";
 import MainTabs from "./components/MainTabs";
 import ScannerIndicator from "./components/indication/ScannerIndicator";
-import PrinterIndicator from "./components/indication/PrinterIndicator";
 import UserAuthorization from "./components/main/UserAuthorization";
 import { showError } from "./service/notification";
 import Loading from "./components/Loading";
 
 export default function App() {
   const contextApp = useContext<StoreApp>(context);
+  const shift = contextApp.stateApp.shift;
+  const amountBoilerShift = contextApp.stateApp.amountBoilerShift;
   const textHelper = contextApp.stateApp.textHelper;
   const isGetCode = contextApp.stateApp.isGetCode;
-  const isGetBoilerOrder = contextApp.stateApp.isGetBoilerOrder;
-  const isGetUniqueBoilerOrder = contextApp.stateApp.isGetUniqueBoilerOrder;
-  const isLoadingBoilerOrder = contextApp.stateApp.isLoadingBoilerOrder;
-  const isPrinting = contextApp.stateApp.isPrinting;
   const isServerConnected = contextApp.stateApp.isServerConnected;
-  const amountSendPrintedBarcode = contextApp.stateApp.amountSendPrintedBarcode;
-  const currentSendAmountPrintedBarcode = contextApp.stateApp.currentSendAmountPrintedBarcode;
   const isRequestLastPart = useSignal(false);
   const isLoadingLastPart = useSignal(false);
   const isWaitRequstLastPart = useRef<NodeJS.Timeout | null>(null);
 
   useSignalEffect(() => {
-    if (isPrinting.value && isGetCode.value) {
-      textHelper.value = `Печать этикеток ${currentSendAmountPrintedBarcode} из ${amountSendPrintedBarcode}`;
-      return;
-    }
-    if (isGetBoilerOrder.value && isGetCode.value) {
-      textHelper.value = "Нажмите на кнопку для печати этикеток";
-      return;
-    }
-    if (isLoadingBoilerOrder.value && isGetCode.value) {
-      textHelper.value = "Передача данных канбан-карты серверу...";
-      return;
-    }
-    if (isGetCode.value && isGetUniqueBoilerOrder.value) {
-      textHelper.value = "Отсканируйте канбан карту";
-      return;
-    }
     if (isGetCode.value) {
-      textHelper.value = "Отсканируйте уникальный номер канбан карты";
+      textHelper.value = "Отсканируйте серийный номер котла";
       return;
     }
     textHelper.value = "Введите код оператора";
   })
 
   useSignalEffect(() => {
-    if (isServerConnected.value && !isRequestLastPart.value && !isLoadingLastPart.value ) {
+    /*if (isServerConnected.value && !isRequestLastPart.value && !isLoadingLastPart.value ) {
       window.exchangeServerAPI.requestGetLastBoilerOrderAfterClose();
       isLoadingLastPart.value = true;
       isWaitRequstLastPart.current = setTimeout(() => {
@@ -59,31 +38,37 @@ export default function App() {
         isLoadingLastPart.value = false;
         showError("response_error_last_part", "Нет ответа от сервера при запросе последнего заказа", 10000);
       }, 10000);
-    }
+    }*/
   })
 
-  function responseLastBoilerOrder(_event: Electron.IpcRendererEvent, boilerOrder: BoilerOrder | ErrorResponse) {
-    isRequestLastPart.value = true;
-    isLoadingLastPart.value = false;
-    isWaitRequstLastPart.current && clearTimeout(isWaitRequstLastPart.current);
-    isWaitRequstLastPart.current = null;
-    if ((boilerOrder as BoilerOrder).orderNumber !== undefined) {
-      isGetBoilerOrder.value = true;
-      isGetUniqueBoilerOrder.value = true;
-      contextApp.stateApp.boilerOrder.value = { ...boilerOrder };
-      console.log(boilerOrder);
+  function responseShift(_event: Electron.IpcRendererEvent, shiftResponse: number | ErrorResponse
+  ) {
+    if ((shiftResponse as ErrorResponse).message !== undefined) {
+      showError("response_shift", (shiftResponse as ErrorResponse).message);
       return;
     }
-    console.log(boilerOrder);
-    showError("response_boiler_order_error", (boilerOrder as ErrorResponse).message);
+    shift.value = shiftResponse as number;
+  }
+
+  function responseAmountBoilerShift(_event: Electron.IpcRendererEvent, amountBoilerShiftResponse: number | ErrorResponse) {
+    if ((amountBoilerShiftResponse as ErrorResponse).message !== undefined) {
+      showError(
+        "response_amount_boiler_shift",
+        (amountBoilerShiftResponse as ErrorResponse).message
+      );
+      return;
+    }
+    amountBoilerShift.value = amountBoilerShiftResponse as number;
   }
 
   useEffect(() => {
-    const removeListenerResponseBoilerOrder = window.exchangeServerAPI.onResponseLastBoiierOrder(responseLastBoilerOrder);
+    const removeListenerShift = window.exchangeServerAPI.onResponseShift(responseShift);
+    const removeListenerAmountBoilerShift = window.exchangeServerAPI.onResponseAmountBoiler(responseAmountBoilerShift);
     return () => {
-      removeListenerResponseBoilerOrder();
-    }
-  }, [])
+      removeListenerShift();
+      removeListenerAmountBoilerShift();
+    };
+  }, []);
 
   return (
     <>

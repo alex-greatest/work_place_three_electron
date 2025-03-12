@@ -5,8 +5,8 @@ import { lazy, Suspense, useContext } from "react";
 import Loading from "./Loading.tsx";
 import { context } from "../main.tsx";
 
-const ComponentsList = lazy(() => import('../screen/ComponentsList.tsx'));
-const HistorySearchingLazy = lazy(() => import('../screen/HistorySearching.tsx'));
+//const ComponentsList = lazy(() => import('../screen/ComponentsList.tsx'));
+//const HistorySearchingLazy = lazy(() => import('../screen/HistorySearching.tsx'));
 
 export default function MainTabs() {
   const contextApp = useContext<StoreApp>(context);
@@ -30,12 +30,10 @@ export default function MainTabs() {
       </Tabs.Panel>
       <Tabs.Panel value="components_list" keepMounted={false}>
         <Suspense fallback={<Loading />}>
-          <ComponentsList />
         </Suspense>
       </Tabs.Panel>
       <Tabs.Panel keepMounted={false} value="history_search">
         <Suspense fallback={<Loading />}>
-          <HistorySearchingLazy />
         </Suspense>
       </Tabs.Panel>
     </Tabs>

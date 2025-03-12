@@ -8,7 +8,7 @@ import { ipcMain } from 'electron/main';
 
 let port: SerialPort<AutoDetectTypes>;
 let comPort: string;
-const regex = /^([A-Z0-9]{5})(\d{8})(\d{6})(\d{10})$/;
+const pattern = /^(EngP3|12F1)(\d{8})(\d{6})(\d{10})$/;
 let mainWindow: BrowserWindow;
 let timerError: NodeJS.Timeout | null = null;
 let timerDisconnect: NodeJS.Timeout | null = null;
@@ -40,7 +40,7 @@ export function controlConnection() {
   });
 
   parser.on("data", (line) => {
-    if (stateMain.isGetCode && stateMain.isServerConnected) { 
+    if (stateMain.isGetCode && stateMain.isServerConnected) {
       pasrseSerialNumber(line);
     } else {
       errorHandler(line, null);
@@ -67,7 +67,9 @@ export function disconnectScanner() {
 }
 
 function pasrseSerialNumber(line: string) {
-  const match = line.match(regex);
+  const match = line.match(pattern);
+  console.log(line);
+  console.log(match);
   if (match) {
     serialNumberEvent.emit("send_serial_number", line);
     return;
@@ -83,10 +85,6 @@ function errorHandler(line: string, match: RegExpMatchArray | null) {
   }
   if (!stateMain.isGetCode) {
     mainWindow.webContents.send("scan_error", `Сначала нужно ввести код оператора!`);
-    return;
-  }
-  if (stateMain.isGetBoilerOrder) {
-    mainWindow.webContents.send("scan_error", `Уже идёт работа с заказом!`);
     return;
   }
   mainWindow.webContents.send("scan_error", `Не удалось распознать код: ${line}`);

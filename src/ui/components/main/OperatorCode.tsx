@@ -5,8 +5,6 @@ import { useSignal } from "@preact/signals-react/runtime";
 import { showError } from "../../service/notification";
 import { useForm } from "@mantine/form";
 
-//let timerId: NodeJS.Timeout | null = null;
-
 export default function OperatorCode() {
   const contextApp = useContext<StoreApp>(context);
   const timerId = useRef<NodeJS.Timeout | null>(null);
@@ -51,9 +49,6 @@ export default function OperatorCode() {
   });
 
   function resetOperatorCode() {
-    if (isPrinting.value) {
-      return;
-    }
     isGetCode.value = false;
     form.setFieldValue("code", 0);
     user.value = { username: "", code: 0, roleDto: { name: "" } };
@@ -106,12 +101,7 @@ export default function OperatorCode() {
         </Button>
         <Button
           style={{ width: "35%", marginTop: "1.7em" }}
-          disabled={
-            !isGetCode.value ||
-            isPrinting.value ||
-            isGetBoilerOrder.value ||
-            isGetUniqueBoilerOrder.value
-          }
+          disabled={!isGetCode.value}
           onClick={resetOperatorCode}
           color="red"
           variant="filled"

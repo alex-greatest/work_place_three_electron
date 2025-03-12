@@ -4,7 +4,6 @@ import { connect, disconnectServer } from './service/exchange_server.js';
 import { getPreloadPath, getUIPath } from './utils/pathResolver.js';
 import { disconnectScanner, scannerConnect } from './service/scaner.js';
 import { storeInitialize } from './utils/store.js';
-import { disconnectPrinter, printerConnect } from './service/exchange_printer.js';
 import { resetOperatorCode, resteMainState } from './utils/state.js';
 
 const createWindow = () => {
@@ -24,7 +23,6 @@ const createWindow = () => {
   mainWindow.once('ready-to-show', () => {
     storeInitialize();
     runSettings();
-    printerConnect(mainWindow);
     scannerConnect(mainWindow);
     connect(mainWindow);
     resteMainState();
@@ -39,6 +37,5 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   disconnectServer();
   disconnectScanner();
-  disconnectPrinter();
   app.quit()
 })

@@ -10,6 +10,7 @@ const client = new Client({
   brokerURL: 'ws://localhost:8080/ws',
   debug: function (str) {
     console.log(str);
+    log.error(str);
   },
   reconnectDelay: 5000,
   heartbeatIncoming: 4000,
@@ -19,7 +20,6 @@ const client = new Client({
 export function connect(_mainWindow: BrowserWindow) {
   mainWindow = _mainWindow
   client.webSocketFactory = function () {
-    // Note that the URL is different from the WebSocket URL
     return new SockJS('http://localhost:8080/ws') as IStompSocket;
   };
   client.onConnect = function (_) {
@@ -49,11 +49,12 @@ export function connect(_mainWindow: BrowserWindow) {
     stateMain.isServerConnected = false;
   }
   client.activate();
-  requestAmountBoileramountShiftMadeBoiler(client);
-  requestShift(client);
-  requestOperatorCode(client);
+  requestAmountBoileramountShiftMadeBoiler();
+  requestShift();
+  requestOperatorCode();
   requestUserAuthorization();
   requestLastBoilerOrder();
+  requestSerialNumberAllowStart()
 }
 
 export function disconnectServer() {
@@ -62,17 +63,16 @@ export function disconnectServer() {
   }
 }
 
-function subscribe(client: Client) {
+function subscribe() {
   client.subscribe('/message/wp2/user/get_info/response', (message) => responseOperatorCode(message));
   client.subscribe('/message/wp2/user/authorization/response', (message) => responseUserAuthorization(message));
   client.subscribe('/message/wp2/shift/get_info/response', (message) => responseShift(message));
   client.subscribe('/message/wp2/shift/amount/made/boiler/get_info/response', (message) => responseAmountBoilerShift(message));
   client.subscribe('/message/station/wp2/operation/response', (message) => responseComponents(message));
-
   client.subscribe('/message/current/shift', (message) => resetShift(message));
 }
 
-function subscribeError(client: Client) {
+function subscribeError() {
   client.subscribe('/message/wp2/user/get_info/errors', (message) => responseError(message, (messageResponse: string) => {
     mainWindow.webContents.send("response_operator_code", {message: messageResponse} as ErrorResponse);
   }));
@@ -82,36 +82,13 @@ function subscribeError(client: Client) {
   client.subscribe('/message/wp2/shift/amount/made/boiler/get_info/errors', (message) => responseError(message, (messageResponse: string) => {  
     mainWindow.webContents.send("response_amount_made_boiler_shift", {message: messageResponse} as ErrorResponse);
   }));
-  client.subscribe('/message/boiler/wp2/print/errors', (message) => responseError(message, (messageResponse: string) => {  
-    mainWindow.webContents.send("response_print_server", {message: messageResponse} as ErrorResponse);
-  }));
   client.subscribe('/message/wp2/user/authorization/errors', (message) => responseError(message, (messageResponse: string) => {
     mainWindow.webContents.send("response_user_authorization", {message: messageResponse} as ErrorResponse);
   }));
-  client.subscribe('/message/station/wp2/operation/errors', (message) => responseError(message, (messageResponse: string) => {  
-    mainWindow.webContents.send("response_components", {message: messageResponse} as ErrorResponse);
-  }));
-
-
-
-
-
-  client.subscribe('/message/boiler/history/get_info/errors', (message) => responseError(message, (messageResponse: string) => {  
-    mainWindow.webContents.send("response_boiler_history", {message: messageResponse} as ErrorResponse);
-  }));
-  client.subscribe('/message/boiler/history/manual/get_info/errors', (message) => responseError(message, (messageResponse: string) => {  
-    mainWindow.webContents.send("response_boiler_history_manual", {message: messageResponse} as ErrorResponse);
-  }));
-
-  client.subscribe('/message/boiler/order/add/errors', (message) => responseError(message, (messageResponse: string) => {
-    mainWindow.webContents.send("response_unique_id_boiler_order", {message: messageResponse} as ErrorResponse);
-  }));
-  client.subscribe('/message/boiler/order/last/get/errors', (message) => responseError(message, (messageResponse: string) => {
-    mainWindow.webContents.send("response_last_boiler_order", {message: messageResponse} as ErrorResponse);
-  }));
+  client.subscribe('/message/station/wp2/start/operation/errors', (message) => responseErrorRoute(message));
 }
 
-function requestShift(client: Client) {
+function requestShift() {
   ipcMain.handle("request_shift", (_event: Electron.IpcMainInvokeEvent) => {
     client?.connected && client.publish({
       destination: "/app/shift/get_info/request",
@@ -126,7 +103,7 @@ function responseShift(message: IMessage) {
   mainWindow.webContents.send("response_shift", stateMain.shiftNumber);
 }
 
-function requestAmountBoileramountShiftMadeBoiler(client: Client) {
+function requestAmountBoileramountShiftMadeBoiler() {
   ipcMain.handle("request_amount_boiler", (_event: Electron.IpcMainInvokeEvent) => {
     client?.connected && client.publish({
       destination: "/app/shift/made/boiler/get_info/request",
@@ -141,7 +118,7 @@ function responseAmountBoilerShift(message: IMessage) {
   mainWindow.webContents.send("response_amount_made_boiler_shift", amountMadeBoilerShift);
 }
 
-function requestOperatorCode(client: Client) {
+function requestOperatorCode() {
   ipcMain.handle("request_operator_code", (_event: Electron.IpcMainInvokeEvent, code: number) => {
     client?.connected && client.publish({
       destination: '/app/user/get_info/request',
@@ -188,8 +165,13 @@ function responseError(message: IMessage, sender: (message: string) => void) {
   sender(messageStr);
 }
 
+function responseErrorRoute(message: IMessage) {
+  const boilerErrorRoute: BoilerErrorRoute = JSON.parse(message.body);
+  log.error("Ошибка при обмене данными с сервером", boilerErrorRoute.error);
+  mainWindow.webContents.send("response_components", boilerErrorRoute);
+}
+
 function resetShift(message: IMessage) {
-  console.log("dasda1wwwww");
   const shiftNumber = Number(message.body);
   mainWindow.webContents.send("response_shift", shiftNumber);
 }
@@ -219,4 +201,8 @@ function requestLastBoilerOrder() {
       skipContentLengthHeader: true,
     });
   });
+}
+
+function requestSerialNumberAllowStart() {
+
 }

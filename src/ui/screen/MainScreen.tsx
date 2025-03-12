@@ -1,6 +1,5 @@
 import { Flex } from "@mantine/core";
 import MainData from "../components/main/MainData";
-import ComponentScanned from "../components/main/ComponentScanned";
 
 export default function MainScreen() {
   return (
@@ -22,7 +21,6 @@ export default function MainScreen() {
       >
         <Flex style={{ width: "100%" }} direction="column">
           <MainData />
-          <ComponentScanned />
         </Flex>
       </Flex>
     </Flex>
