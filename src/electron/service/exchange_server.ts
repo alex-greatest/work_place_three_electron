@@ -2,7 +2,7 @@ import { Client, IStompSocket, IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { BrowserWindow, ipcMain } from 'electron';
 import log from 'electron-log';
-import { serialNumberEvent, stateMain } from '../utils/state.js';
+import { createRequestComponents, serialNumberEvent, stateMain } from '../utils/state.js';
 
 let mainWindow: BrowserWindow;
 
@@ -25,8 +25,8 @@ export function connect(_mainWindow: BrowserWindow) {
   client.onConnect = function (_) {
     mainWindow.webContents.send("updater_connection_server_state", true);
     stateMain.isServerConnected = true;
-    subscribe(client);
-    subscribeError(client);
+    subscribe();
+    subscribeError();
     client?.connected && client.publish({
       destination: "/app/shift/made/boiler/get_info/request",
       body: "wp2",
@@ -54,7 +54,9 @@ export function connect(_mainWindow: BrowserWindow) {
   requestOperatorCode();
   requestUserAuthorization();
   requestLastBoilerOrder();
-  requestSerialNumberAllowStart()
+  requestSerialNumberAllowStart();
+  requestInterruptedOperation();
+  requestSaveResultComponents();
 }
 
 export function disconnectServer() {
@@ -69,7 +71,10 @@ function subscribe() {
   client.subscribe('/message/wp2/shift/get_info/response', (message) => responseShift(message));
   client.subscribe('/message/wp2/shift/amount/made/boiler/get_info/response', (message) => responseAmountBoilerShift(message));
   client.subscribe('/message/station/wp2/operation/response', (message) => responseComponents(message));
+  client.subscribe('/message/station/wp2/operation/response', (message) => responseComponents(message));
+  client.subscribe('/message/station/wp2/interrupted/operation/response', (message) => responseInterruptedOperation(message));
   client.subscribe('/message/current/shift', (message) => resetShift(message));
+  client.subscribe('/message/station/wp2/end/operation/response', (message) => responseSaveResultComponents(message));
 }
 
 function subscribeError() {
@@ -86,6 +91,9 @@ function subscribeError() {
     mainWindow.webContents.send("response_user_authorization", {message: messageResponse} as ErrorResponse);
   }));
   client.subscribe('/message/station/wp2/start/operation/errors', (message) => responseErrorRoute(message));
+  client.subscribe('/message/station/wp2/end/operation/errors', (message) => responseError(message, (messageResponse: string) => {
+    mainWindow.webContents.send("response_operation_save_results", {message: messageResponse} as ErrorResponse);
+  }));
 }
 
 function requestShift() {
@@ -137,25 +145,23 @@ function responseOperatorCode(message: IMessage) {
   }
 }
 
-serialNumberEvent.on("send_serial_number", (serialNumber: string) => {
-  const boilerRequest: BoilerRequestWpTwo = {
-    numberShift: stateMain.shiftNumber,
-    userCode: stateMain.user.code,
-    serialNumber: serialNumber,
-    stationName: "wp2",
-    prevStationName: "wp1",
-    isAllowStart: false
-  };
+function sendRequestComponents(serialNumber: string, allowStart = false) {
+  mainWindow.webContents.send("response_wait");
+  const componentsRequest = createRequestComponents(serialNumber, allowStart);
   client?.connected && client.publish({
-    destination: '/app/station/wp2/start/operation/request',
-    body: JSON.stringify(boilerRequest),
+    destination: '/app/station/start/operation/request',
+    body: JSON.stringify(componentsRequest),
     skipContentLengthHeader: true,
   });
+}
+
+serialNumberEvent.on("send_serial_number", (serialNumber: string) => {
+  sendRequestComponents(serialNumber);
 });
 
 function responseComponents(message: IMessage) {
-  const boilerResponseWpTwo: BoilerResponseWpTwo = JSON.parse(message.body);
-  stateMain.isGetBoilerResponseWpTwo = true;
+  const boilerResponseWpTwo: ComponentsResponse = JSON.parse(message.body);
+  stateMain.isRunCycle = true;
   mainWindow.webContents.send("response_components", boilerResponseWpTwo);
 }
 
@@ -166,7 +172,8 @@ function responseError(message: IMessage, sender: (message: string) => void) {
 }
 
 function responseErrorRoute(message: IMessage) {
-  const boilerErrorRoute: BoilerErrorRoute = JSON.parse(message.body);
+  const boilerErrorRoute: ComponentsErrorRoute = JSON.parse(message.body);
+  console.log(boilerErrorRoute);
   log.error("Ошибка при обмене данными с сервером", boilerErrorRoute.error);
   mainWindow.webContents.send("response_components", boilerErrorRoute);
 }
@@ -204,5 +211,39 @@ function requestLastBoilerOrder() {
 }
 
 function requestSerialNumberAllowStart() {
+  ipcMain.handle("request_serial_number_allow_start", (_event: Electron.IpcMainInvokeEvent, serialNumber: string) => {
+    sendRequestComponents(serialNumber, true);
+  });
+}
 
+function requestInterruptedOperation() {
+  ipcMain.handle("request_interrupted_operation", (_event: Electron.IpcMainInvokeEvent, interruptedOperation: InterruptedRequest) => {
+    interruptedOperation.stationName = "wp2";
+    client?.connected && client.publish({
+      destination: '/app/station/interrupted/operation/request',
+      body: JSON.stringify(interruptedOperation),
+      skipContentLengthHeader: true,
+    });
+  });
+}
+
+function responseInterruptedOperation(message: IMessage) {
+  const errorMessage = message.body;
+  mainWindow.webContents.send("response_interrupted_operation", {message: errorMessage} );
+}
+
+function requestSaveResultComponents() {
+  ipcMain.handle("request_operation_save_results", (_event: Electron.IpcMainInvokeEvent, componentsResult: ComponentsResult[]) => {
+    const componentsResultRequest: ComponentsResultRequest = {componentsResult: componentsResult, stationName: "wp2"};
+    client?.connected && client.publish({
+      destination: '/app/station/end/operation/request',
+      body: JSON.stringify(componentsResultRequest),
+      skipContentLengthHeader: true,
+    });
+  });
+}
+
+function responseSaveResultComponents(message: IMessage) {
+  const response = message.body;
+  mainWindow.webContents.send("response_operation_save_results", response );
 }

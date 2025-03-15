@@ -1,11 +1,11 @@
 import classes from "../css/main.module.css";
 import { Tabs } from "@mantine/core";
-import MainScreen from "../screen/MainScreen";
 import { lazy, Suspense, useContext } from "react";
 import Loading from "./Loading.tsx";
 import { context } from "../main.tsx";
 
-//const ComponentsList = lazy(() => import('../screen/ComponentsList.tsx'));
+const ComponentsList = lazy(() => import('../screen/ComponentsList.tsx'));
+const MainScreen = lazy(() => import('../screen/MainScreen.tsx'));
 //const HistorySearchingLazy = lazy(() => import('../screen/HistorySearching.tsx'));
 
 export default function MainTabs() {
@@ -26,10 +26,13 @@ export default function MainTabs() {
         <Tabs.Tab disabled={!isUserAuthorization.value} value="history_search"> История (поиск) </Tabs.Tab>
       </Tabs.List>
       <Tabs.Panel value="Main">
-        <MainScreen />
+        <Suspense fallback={<Loading />}>
+          <MainScreen />
+        </Suspense>
       </Tabs.Panel>
       <Tabs.Panel value="components_list" keepMounted={false}>
         <Suspense fallback={<Loading />}>
+          <ComponentsList />    
         </Suspense>
       </Tabs.Panel>
       <Tabs.Panel keepMounted={false} value="history_search">

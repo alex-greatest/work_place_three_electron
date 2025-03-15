@@ -18,6 +18,7 @@ export function scannerConnect (_mainWindow: BrowserWindow) {
   comPort = getComPort();
   getScannerState();
   controlConnection();
+  requestScanComponetnsAllowed();
 }
 
 export function controlConnection() {
@@ -40,11 +41,15 @@ export function controlConnection() {
   });
 
   parser.on("data", (line) => {
-    if (stateMain.isGetCode && stateMain.isServerConnected) {
+    if (stateMain.isScannedComponentsAllowed && stateMain.isServerConnected) {
+      mainWindow.webContents.send("response_scan_components", line);
+      return;
+    } 
+    if (stateMain.isGetCode && stateMain.isServerConnected && !stateMain.isRunCycle) {
       pasrseSerialNumber(line);
-    } else {
-      errorHandler(line, null);
+      return;
     }
+    errorHandler(line, null);
   });
 
   port.on("close", (err: any) => {
@@ -68,8 +73,6 @@ export function disconnectScanner() {
 
 function pasrseSerialNumber(line: string) {
   const match = line.match(pattern);
-  console.log(line);
-  console.log(match);
   if (match) {
     serialNumberEvent.emit("send_serial_number", line);
     return;
@@ -93,5 +96,11 @@ function errorHandler(line: string, match: RegExpMatchArray | null) {
 function getScannerState() {
   ipcMain.handle("get_scanner_state", (_event: Electron.IpcMainInvokeEvent) => {
     return port?.isOpen ?? false;
+  });
+}
+
+function requestScanComponetnsAllowed() {
+  ipcMain.handle("request_scan_components_allowed", (_event: Electron.IpcMainInvokeEvent, isScan: boolean) => {
+    return stateMain.isScannedComponentsAllowed = isScan;
   });
 }

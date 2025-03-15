@@ -12,11 +12,19 @@ export function createAppStore(): StoreApp {
     isUserAuthorization: signal<boolean>(false),
     shift: signal<number>(0),
     amountBoilerShift: signal<number>(0),
-    isGetBoilerResponseWpTwo: signal<boolean>(false),
-    boilerResponseWpTwo: signal<BoilerResponseWpTwo>({boilerTypeStation: { id: 0, typeName: "", article: ""},
+    isGetComponentsResponse: signal<boolean>(false),
+    componentsResponse: signal<ComponentsResponse>({boilerTypeCycle: { typeName: "", article: "", serialNumber: ""},
       componentSetDtoList: [] as ComponentSetDto[],
       componentBindingResponses: [] as ComponentBindingResponse[]}),
-    isLoadingComponents: signal<boolean>(false),
+    isExchangeServer: signal<boolean>(false),
+    isRunCycle: signal<boolean>(false),
+    isInizializeRunCycle: signal<boolean>(false),
+    componenstResult: signal<ComponentsResult[]>([] as ComponentsResult[]),
+    componenstResultRequest: signal<ComponentsResult[]>([] as ComponentsResult[]),
+    actualScannedComponent: signal<ComponentBindingResponse>({id: 0, componentType: {id: 0, name: ""}, order: 0}),
+    actualNumberBindingComponent: signal<number>(0),
+    amountBindingComponent: signal<number>(0),
+    actualResultComponent: signal<ComponentsResult>({componentType: {id: 0, name: ""}, scannedValue: "", status: ""}),
   });
 
   return { stateApp };

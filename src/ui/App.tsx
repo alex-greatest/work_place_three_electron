@@ -16,12 +16,27 @@ export default function App() {
   const amountBoilerShift = contextApp.stateApp.amountBoilerShift;
   const textHelper = contextApp.stateApp.textHelper;
   const isGetCode = contextApp.stateApp.isGetCode;
+  const isExchangeServer = contextApp.stateApp.isExchangeServer;
   const isServerConnected = contextApp.stateApp.isServerConnected;
+  const isRunCycle = contextApp.stateApp.isRunCycle;
+  const actualScannedComponent = contextApp.stateApp.actualScannedComponent;
   const isRequestLastPart = useSignal(false);
   const isLoadingLastPart = useSignal(false);
   const isWaitRequstLastPart = useRef<NodeJS.Timeout | null>(null);
 
   useSignalEffect(() => {
+    if (!isServerConnected.value) {
+      textHelper.value = "Нет связи с сервером";
+      return;
+    }
+    if (isExchangeServer.value) {
+      textHelper.value = "Передача данных серверу...";
+      return;
+    }
+    if (isRunCycle.value && actualScannedComponent.value.id !== 0) {
+      textHelper.value = `Отсканируйте компонент: ${actualScannedComponent.value.componentType.name}`;
+      return;
+    }
     if (isGetCode.value) {
       textHelper.value = "Отсканируйте серийный номер котла";
       return;
@@ -41,8 +56,7 @@ export default function App() {
     }*/
   })
 
-  function responseShift(_event: Electron.IpcRendererEvent, shiftResponse: number | ErrorResponse
-  ) {
+  function responseShift(_event: Electron.IpcRendererEvent, shiftResponse: number | ErrorResponse) {
     if ((shiftResponse as ErrorResponse).message !== undefined) {
       showError("response_shift", (shiftResponse as ErrorResponse).message);
       return;
@@ -72,11 +86,6 @@ export default function App() {
 
   return (
     <>
-      { isLoadingLastPart.value ?
-      <div style={{ height: "100vh" }}>
-       <Loading />
-      </div>
-       : 
      <Flex
           direction="column"
           style={{ width: "100%", height: "100vh", padding: "1em" }}
@@ -97,7 +106,6 @@ export default function App() {
           </Paper>
           <MessageHelper />
         </Flex>
-      }
     </>
   );
 }

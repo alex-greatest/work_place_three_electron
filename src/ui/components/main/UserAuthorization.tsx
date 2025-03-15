@@ -7,9 +7,6 @@ import { useDisclosure } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
 import dayjs from "dayjs";
 
-//let timerId: NodeJS.Timeout | null = null;
-//let timerAutoLogout: NodeJS.Timeout | null = null;
-
 const UserAuthorization = () => {
   const [opened, { open, close }] = useDisclosure(false);
   const timerId = useRef<NodeJS.Timeout | null>(null);
@@ -36,6 +33,7 @@ const UserAuthorization = () => {
   });
 
   function requestUserAuthorization(values: {login: string, password: string}) {
+    close();
     isLoadingUserAuthorization.value = true;
     const userAuthorization = {
       login: values.login,
@@ -56,7 +54,6 @@ const UserAuthorization = () => {
     console.log(userResponse);
     isLoadingUserAuthorization.value = false;
     if ((userResponse as UserResponse).username !== undefined) {
-      close();
       userAuthorization.value = userResponse as UserResponse;
       isUserAuthorization.value = true;
       timerId.current && clearTimeout(timerId.current);
@@ -122,6 +119,9 @@ const UserAuthorization = () => {
       <Flex gap={"1em"} align={"center"} style={{ marginLeft: "auto", marginRight: "1em" }}>
         <Text hidden={!isUserAuthorization.value} style={{ fontSize: "23px" }}>
           {userAuthorization.value.username}
+        </Text>
+        <Text hidden={!isLoadingUserAuthorization.value} style={{ fontSize: "23px" }}>
+          Загрузка...
         </Text>
         <Button onClick={() => {
           if (isUserAuthorization.value) {

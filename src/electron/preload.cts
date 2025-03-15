@@ -18,8 +18,8 @@ contextBridge.exposeInMainWorld("exchangeServerAPI", {
     ipcRenderer.on("response_shift", listener);
     return () => { ipcRenderer.removeListener("response_shift", listener); };
   },
-  onResponseComponents: (callback: callbackBoilerResponseWpTwo) => {
-    const listener = (_event: Electron.IpcRendererEvent, value: BoilerResponseWpTwo | BoilerErrorRoute) => callback(_event, value);
+  onResponseComponents: (callback: callbackComponentsResponse) => {
+    const listener = (_event: Electron.IpcRendererEvent, value: ComponentsResponse | ComponentsErrorRoute) => callback(_event, value);
     ipcRenderer.on("response_components", listener);
     return () => { ipcRenderer.removeListener("response_components", listener); };
   },
@@ -33,19 +33,30 @@ contextBridge.exposeInMainWorld("exchangeServerAPI", {
     ipcRenderer.on("response_amount_made_boiler_shift", listener);
     return () => { ipcRenderer.removeListener("response_amount_made_boiler_shift", listener); };
   },
-  onResponseAmountBoilerPrintedOrder: (callback: callbackAmountOrderPrintedResponse) => {
-    const listener = (_event: Electron.IpcRendererEvent, value: number) => callback(_event, value);
-    ipcRenderer.on("response_amount_boiler_printer_order", listener);
-    return () => { ipcRenderer.removeListener("response_amount_boiler_printer_order", listener); };
-  },
-  requestPrint: () => ipcRenderer.invoke("request_printer_server"),
-  requestBoilerHistory: (pageNumber: number) => ipcRenderer.invoke("request_boiler_history", pageNumber),
-  requestBoilerHistoryManual: (id: string, pageNumber: number) => ipcRenderer.invoke("request_boiler_history_manual", id, pageNumber),
   requestUserAuthorization: (userAuthorization: UserRequestAuthorization) => ipcRenderer.invoke("request_user_authorization", userAuthorization),
   onResponseUserAuthorization: (callback: callbackUserResponse) => {
     const listener = (_event: Electron.IpcRendererEvent, value: UserResponse | ErrorResponse) => callback(_event, value);
     ipcRenderer.on("response_user_authorization", listener);
     return () => { ipcRenderer.removeListener("response_user_authorization", listener); };
+  },
+  requestSerialNumberAllowStart: (serialNumber: string) => ipcRenderer.invoke("request_serial_number_allow_start", serialNumber),
+  onResponseWait: (callback: callbackEmpty) => {
+    const listener = (_event: Electron.IpcRendererEvent) => callback(_event);
+    ipcRenderer.on("response_wait", listener);
+    return () => { ipcRenderer.removeListener("response_wait", listener); };
+  },
+  requestInterruptedOperation: (interruptedRequest: InterruptedRequest) => ipcRenderer.invoke("request_interrupted_operation", interruptedRequest),
+  onResponseInterruptedOperation: (callback: callbackErrorResponse) => {
+    const listener = (_event: Electron.IpcRendererEvent, value: ErrorResponse) => callback(_event, value);
+    ipcRenderer.on("response_interrupted_operation", listener);
+    return () => { ipcRenderer.removeListener("response_interrupted_operation", listener); };
+  },
+  requestSaveResultComponents: (componentsResult: ComponentsResult[]) => 
+    ipcRenderer.invoke("request_operation_save_results", componentsResult),
+  onResponseSaveResultComponents: (callback: callbackErrorResponseString) => {
+    const listener = (_event: Electron.IpcRendererEvent, value: ErrorResponse | string) => callback(_event, value);
+    ipcRenderer.on("response_operation_save_results", listener);
+    return () => { ipcRenderer.removeListener("response_operation_save_results", listener); };
   },
 });
 
@@ -71,10 +82,11 @@ contextBridge.exposeInMainWorld("exchangeScanner", {
     ipcRenderer.on("response_scan_manual_error", listener);
     return () => { ipcRenderer.removeListener("response_scan_manual_error", listener); };
   },
-  onResponseComponentsWait: (callback: callbackBoilerResponseWpTwo) => {
-    const listener = (_event: Electron.IpcRendererEvent, value: BoilerResponseWpTwo | BoilerErrorRoute) => callback(_event, value);
-    ipcRenderer.on("response_components", listener);
-    return () => { ipcRenderer.removeListener("response_components", listener); };
+  requestScannedComponentsAllowed: (isScan: boolean) => ipcRenderer.invoke("request_scan_components_allowed", isScan),
+  onResponseScanСomponents: (callback: callbackString) => {
+    const listener = (_event: Electron.IpcRendererEvent, value: string) => callback(_event, value);
+    ipcRenderer.on("response_scan_components", listener);
+    return () => { ipcRenderer.removeListener("response_scan_components", listener); };
   },
 });
 
