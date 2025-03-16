@@ -12,11 +12,10 @@ export default function OperatorCode() {
   const user = contextApp.stateApp.user;
   const isGetCode = contextApp.stateApp.isGetCode;
   const isLoadingRequestUserCode = useSignal<boolean>(false);
+  const isRunCycle = contextApp.stateApp.isRunCycle;
+  const isExchangeServer = contextApp.stateApp.isExchangeServer;
 
-  function responseUserCode(
-    _event: Electron.IpcRendererEvent,
-    userResponse: UserResponse | ErrorResponse
-  ) {
+  function responseUserCode(_event: Electron.IpcRendererEvent, userResponse: UserResponse | ErrorResponse) {
     isLoadingRequestUserCode.value = false;
     if ((userResponse as UserResponse).username !== undefined) {
       user.value = userResponse as UserResponse;
@@ -101,7 +100,7 @@ export default function OperatorCode() {
         </Button>
         <Button
           style={{ width: "35%", marginTop: "1.7em" }}
-          disabled={!isGetCode.value}
+          disabled={!isGetCode.value || isRunCycle.value || isExchangeServer.value} 
           onClick={resetOperatorCode}
           color="red"
           variant="filled"

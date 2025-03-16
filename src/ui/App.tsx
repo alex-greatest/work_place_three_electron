@@ -20,17 +20,34 @@ export default function App() {
   const isServerConnected = contextApp.stateApp.isServerConnected;
   const isRunCycle = contextApp.stateApp.isRunCycle;
   const actualScannedComponent = contextApp.stateApp.actualScannedComponent;
+  const isWaitNewCycleStart = contextApp.stateApp.isWaitNewCycleStart;
+  const stateResult = contextApp.stateApp.stateResult;
+  const isNotResposenSaveResult = contextApp.stateApp.isNotResposenSaveResult;
+  const isErorrSaveResults = contextApp.stateApp.isErorrSaveResults;
+  const componentsResponse = contextApp.stateApp.componentsResponse;
   const isRequestLastPart = useSignal(false);
   const isLoadingLastPart = useSignal(false);
   const isWaitRequstLastPart = useRef<NodeJS.Timeout | null>(null);
 
   useSignalEffect(() => {
-    if (!isServerConnected.value) {
-      textHelper.value = "Нет связи с сервером";
+    if (isErorrSaveResults.value) {
+      textHelper.value = "Не удалось сохранить результат. Ошибка. Повотирите попытку";
       return;
     }
     if (isExchangeServer.value) {
       textHelper.value = "Передача данных серверу...";
+      return;
+    }
+    if (!isGetCode.value) {
+      textHelper.value = "Введите код оператора";
+      return;
+    }
+    if (isNotResposenSaveResult.value) {
+      textHelper.value = "Не удалось сохранить результат. Нет ответа от сервера. Повотирите попытку";
+      return;
+    }
+    if (isWaitNewCycleStart.value) {
+      textHelper.value = `Результат: ${stateResult.value}. Отсканируйте серийный номер котла для продолжения`;
       return;
     }
     if (isRunCycle.value && actualScannedComponent.value.id !== 0) {
@@ -41,19 +58,18 @@ export default function App() {
       textHelper.value = "Отсканируйте серийный номер котла";
       return;
     }
-    textHelper.value = "Введите код оператора";
   })
 
   useSignalEffect(() => {
-    /*if (isServerConnected.value && !isRequestLastPart.value && !isLoadingLastPart.value ) {
-      window.exchangeServerAPI.requestGetLastBoilerOrderAfterClose();
+    if (isServerConnected.value && !isRequestLastPart.value && !isLoadingLastPart.value ) {
+      window.exchangeServerAPI.requestGetLastPartAfterClose();
       isLoadingLastPart.value = true;
       isWaitRequstLastPart.current = setTimeout(() => {
         isRequestLastPart.value = false;
         isLoadingLastPart.value = false;
-        showError("response_error_last_part", "Нет ответа от сервера при запросе последнего заказа", 10000);
+        isWaitRequstLastPart.current = null;
       }, 10000);
-    }*/
+    }
   })
 
   function responseShift(_event: Electron.IpcRendererEvent, shiftResponse: number | ErrorResponse) {
@@ -75,12 +91,29 @@ export default function App() {
     amountBoilerShift.value = amountBoilerShiftResponse as number;
   }
 
+  function responseLastPart(_event: Electron.IpcRendererEvent, componentsResponseServer: ComponentsResponse | ComponentsErrorRoute) {
+    isWaitRequstLastPart.current && clearTimeout(isWaitRequstLastPart.current);
+    isWaitRequstLastPart.current = null;
+    isLoadingLastPart.value = false;
+    isRequestLastPart.value = true;
+    if ((componentsResponseServer as ComponentsResponse).boilerTypeCycle !== undefined) {
+      componentsResponse.value = componentsResponseServer as ComponentsResponse;
+      isRunCycle.value = true;
+      return;
+    }
+  }
+
   useEffect(() => {
     const removeListenerShift = window.exchangeServerAPI.onResponseShift(responseShift);
     const removeListenerAmountBoilerShift = window.exchangeServerAPI.onResponseAmountBoiler(responseAmountBoilerShift);
+    const removeListenerResponseLastPart = window.exchangeServerAPI.onResponseLastPart(responseLastPart);
+    console.log('sdasd');
     return () => {
       removeListenerShift();
       removeListenerAmountBoilerShift();
+      removeListenerResponseLastPart();
+      isWaitRequstLastPart.current && clearTimeout(isWaitRequstLastPart.current);
+      isWaitRequstLastPart.current = null;
     };
   }, []);
 
@@ -102,7 +135,7 @@ export default function App() {
             shadow="xl"
             style={{ width: "100%", height: "85%" }}
           >
-            <MainTabs />
+            {isLoadingLastPart.value ? <Loading /> : <MainTabs />}
           </Paper>
           <MessageHelper />
         </Flex>

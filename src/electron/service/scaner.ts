@@ -19,6 +19,7 @@ export function scannerConnect (_mainWindow: BrowserWindow) {
   getScannerState();
   controlConnection();
   requestScanComponetnsAllowed();
+  requestScannedNewSerialNumber();
 }
 
 export function controlConnection() {
@@ -45,7 +46,9 @@ export function controlConnection() {
       mainWindow.webContents.send("response_scan_components", line);
       return;
     } 
-    if (stateMain.isGetCode && stateMain.isServerConnected && !stateMain.isRunCycle) {
+    if ((stateMain.isGetCode || stateMain.isScanNewSerialNumber) && stateMain.isServerConnected && !stateMain.isRunCycle) {
+      console.log("salam");
+      console.log(stateMain.isScanNewSerialNumber);
       pasrseSerialNumber(line);
       return;
     }
@@ -74,6 +77,8 @@ export function disconnectScanner() {
 function pasrseSerialNumber(line: string) {
   const match = line.match(pattern);
   if (match) {
+    mainWindow.webContents.send("response_scan_new_serial_number", line);
+    stateMain.isScanNewSerialNumber = false;
     serialNumberEvent.emit("send_serial_number", line);
     return;
   }
@@ -101,6 +106,14 @@ function getScannerState() {
 
 function requestScanComponetnsAllowed() {
   ipcMain.handle("request_scan_components_allowed", (_event: Electron.IpcMainInvokeEvent, isScan: boolean) => {
-    return stateMain.isScannedComponentsAllowed = isScan;
+    stateMain.isScannedComponentsAllowed = isScan;
+  });
+}
+
+function requestScannedNewSerialNumber() {
+  ipcMain.handle("request_scan_new_serial_number", (_event: Electron.IpcMainInvokeEvent, isScan: boolean) => {
+    stateMain.isScanNewSerialNumber = isScan;
+    console.log("salamNax");
+    console.log(stateMain.isScanNewSerialNumber);
   });
 }

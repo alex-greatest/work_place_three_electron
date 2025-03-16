@@ -8,16 +8,15 @@ import {
   useMantineReactTable,
   type MRT_ColumnDef,
 } from "mantine-react-table";
-import { Box, Flex } from "@mantine/core";
+import { Box, Button, Flex } from "@mantine/core";
 import { context } from "../../main";
-import { useSignal, useSignalEffect } from "@preact/signals-react";
+import { useSignalEffect } from "@preact/signals-react";
 import { showError } from "../../service/notification";
 
 //let timerId: NodeJS.Timeout | null = null;
 
 const ComponentsResult = () => {
   const contextApp = useContext<StoreApp>(context);
-  const repeatRequest = useSignal<boolean>(false);
   const componentsResult = contextApp.stateApp.componenstResult;
   const componenstResultRequest = contextApp.stateApp.componenstResultRequest;
   const actualNumberBindingComponent = contextApp.stateApp.actualNumberBindingComponent;
@@ -28,10 +27,14 @@ const ComponentsResult = () => {
   const isExchangeServer = contextApp.stateApp.isExchangeServer;
   const isRunCycle = contextApp.stateApp.isRunCycle;
   const isInizializeRunCycle = contextApp.stateApp.isInizializeRunCycle;
+  const isWaitNewCycleStart = contextApp.stateApp.isWaitNewCycleStart;
+  const isNotResposenSaveResult = contextApp.stateApp.isNotResposenSaveResult;
+  const isErorrSaveResults = contextApp.stateApp.isErorrSaveResults;
   const timerWaitResultComponents = useRef<NodeJS.Timeout | null>(null);
 
   function createComponentsResult() {
     if (componentsResponse.value.componentBindingResponses.length > 0 && componentsResult.value.length === 0) {
+      componenstResultRequest.value = [] as ComponentsResult[];
       const newComponentsResult = componentsResponse.value.componentBindingResponses.map((componentBinding: ComponentBindingResponse) => ({
         componentType: componentBinding.componentType,
         scannedValue: "",
@@ -60,9 +63,11 @@ const ComponentsResult = () => {
   function checkStatus() {
     switch (actualResultComponent.value.status) {
       case "OK":
+        contextApp.stateApp.stateResult.value = "OK";
         continueScanned();
         break;
       case "NOK":
+        contextApp.stateApp.stateResult.value = "NOK";
         requestServerComponentsResultSave();
         break;
       default:
@@ -76,39 +81,51 @@ const ComponentsResult = () => {
       actualScannedComponent.value = componentsResponse.value.componentBindingResponses[actualNumberBindingComponent.value];
       actualResultComponent.value = componentsResult.value[actualNumberBindingComponent.value];
     } else {
-      //window.exchangeScanner.requestScannedComponentsAllowed(false);
-      //isRunCycle.value = false;
+      requestServerComponentsResultSave();
     }
   }
 
   function resetState() {
+    window.syncState.requestMainStateReset();
     isRunCycle.value = false;
     isInizializeRunCycle.value = false;
+    isWaitNewCycleStart.value = true;
+    window.exchangeScanner.requestScannedNewSerialNumber(true);
   }
 
   function requestServerComponentsResultSave() {
     window.exchangeScanner.requestScannedComponentsAllowed(false);
-    isExchangeServer.value = true
-    window.exchangeServerAPI.requestSaveResultComponents(componenstResultRequest.value);
+    isExchangeServer.value = true;
+    const componentsResultRequestSend: ComponentsResultRequest = {
+      componentsResult: componenstResultRequest.value, 
+      serialNumber: componentsResponse.value.boilerTypeCycle.serialNumber,
+      stationName: "",
+      status: contextApp.stateApp.stateResult.value
+    };
+    window.exchangeServerAPI.requestSaveResultComponents(componentsResultRequestSend);
     timerWaitResultComponents.current = setTimeout(() => {
       if (isExchangeServer.value) {
         isExchangeServer.value = false;
-        resetState();
+        isNotResposenSaveResult.value = true;
         showError("response_operation_save_results", "Не удалось получить ответ от сервера");
       }
     }, 10000);
   }
 
-  function responseServerComponentsResultSave(_event: Electron.IpcRendererEvent, value: string | ErrorResponse) {
+  function responseServerComponentsResultSave(_event: Electron.IpcRendererEvent, value: WpResponse | ErrorResponse) {
+    isNotResposenSaveResult.value = false;
     isExchangeServer.value = false;
     timerWaitResultComponents.current && clearTimeout(timerWaitResultComponents.current);
     timerWaitResultComponents.current = null;
+    if ((value as WpResponse).amountBoilerShiftMade !== undefined) {
+      resetState();
+      return;
+    }
     if ((value as ErrorResponse).message !== undefined) {
-      repeatRequest.value = true;
+      isErorrSaveResults.value = true;
       showError("response_operation_save_results", (value as ErrorResponse).message);
       return;
     }
-    resetState();
   }
 
   useSignalEffect(() => {
@@ -177,7 +194,7 @@ const ComponentsResult = () => {
         justifyContent: 'center',
         backgroundColor: 'white',
         alignItems: 'center' }}> 
-        <p style={{fontSize: "30px"}}>Данные не найдены</p>
+        <p style={{fontSize: "30px"}}></p>
       </Flex>
     ),
     enableColumnActions: false,
@@ -185,6 +202,7 @@ const ComponentsResult = () => {
     enablePagination: false,
     enableSorting: false,
     enableTopToolbar: false,
+    enableBottomToolbar: false,
     mantineTableContainerProps: { style: { maxHeight: '450px' } },
     initialState: { density: 'xs' },
     mantineTableProps: {
@@ -203,6 +221,16 @@ const ComponentsResult = () => {
 
   return (
     <Flex style={{ width: "100%", height: "80%" }} mt={1} justify="center">
+      <Button style={{position: 'absolute', 
+                    display: !isNotResposenSaveResult.value && !isErorrSaveResults.value ? 'none' : 'block', 
+                    backgroundColor: 'red',
+                    height: '90px',
+                    width: '200px',
+                    left: '40em', 
+                    top: '30em', 
+                    zIndex: '5000'}} onClick={requestServerComponentsResultSave}>
+        Повторить запрос
+      </Button>
       <div style={{ width: "100%" }}>
         <MantineReactTable table={table} />
       </div>

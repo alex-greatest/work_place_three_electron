@@ -35,10 +35,6 @@ export default function MainTabs() {
           <ComponentsList />    
         </Suspense>
       </Tabs.Panel>
-      <Tabs.Panel keepMounted={false} value="history_search">
-        <Suspense fallback={<Loading />}>
-        </Suspense>
-      </Tabs.Panel>
     </Tabs>
   );
 }

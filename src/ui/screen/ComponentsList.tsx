@@ -49,6 +49,7 @@ const ComponentsList = () => {
     enablePagination: false,
     enableSorting: false,
     enableTopToolbar: false,
+    enableBottomToolbar: false,
     mantineTableContainerProps: { style: { maxHeight: '450px' } },
     initialState: { density: 'xs' },
     mantineTableProps: {

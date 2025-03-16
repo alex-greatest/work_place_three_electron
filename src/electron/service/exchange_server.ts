@@ -53,7 +53,7 @@ export function connect(_mainWindow: BrowserWindow) {
   requestShift();
   requestOperatorCode();
   requestUserAuthorization();
-  requestLastBoilerOrder();
+  requestLastOperation();
   requestSerialNumberAllowStart();
   requestInterruptedOperation();
   requestSaveResultComponents();
@@ -75,6 +75,9 @@ function subscribe() {
   client.subscribe('/message/station/wp2/interrupted/operation/response', (message) => responseInterruptedOperation(message));
   client.subscribe('/message/current/shift', (message) => resetShift(message));
   client.subscribe('/message/station/wp2/end/operation/response', (message) => responseSaveResultComponents(message));
+
+
+  client.subscribe('/message/station/wp2/operation/get/last/response', (message) => responseLastOperation(message));
 }
 
 function subscribeError() {
@@ -160,9 +163,9 @@ serialNumberEvent.on("send_serial_number", (serialNumber: string) => {
 });
 
 function responseComponents(message: IMessage) {
-  const boilerResponseWpTwo: ComponentsResponse = JSON.parse(message.body);
+  const componentsResponse: ComponentsResponse = JSON.parse(message.body);
   stateMain.isRunCycle = true;
-  mainWindow.webContents.send("response_components", boilerResponseWpTwo);
+  mainWindow.webContents.send("response_components", componentsResponse);
 }
 
 function responseError(message: IMessage, sender: (message: string) => void) {
@@ -200,11 +203,11 @@ function responseUserAuthorization(message: IMessage) {
   }
 }
 
-function requestLastBoilerOrder() {
-  ipcMain.handle("request_last_boiler_order_after_close", (_event: Electron.IpcMainInvokeEvent) => {
+function requestLastOperation() {
+  ipcMain.handle("request_last_operation_after_close", (_event: Electron.IpcMainInvokeEvent) => {
     client?.connected && client.publish({
-      destination: '/app/boiler/order/last/get/request',
-      body: "",
+      destination: '/app/station/start/operation/get/last/request',
+      body: "wp2",
       skipContentLengthHeader: true,
     });
   });
@@ -233,17 +236,35 @@ function responseInterruptedOperation(message: IMessage) {
 }
 
 function requestSaveResultComponents() {
-  ipcMain.handle("request_operation_save_results", (_event: Electron.IpcMainInvokeEvent, componentsResult: ComponentsResult[]) => {
-    const componentsResultRequest: ComponentsResultRequest = {componentsResult: componentsResult, stationName: "wp2"};
+  ipcMain.handle("request_operation_save_results", (_event: Electron.IpcMainInvokeEvent, componentsResult: ComponentsResultRequest) => {
+    componentsResult.stationName = "wp2";
     client?.connected && client.publish({
       destination: '/app/station/end/operation/request',
-      body: JSON.stringify(componentsResultRequest),
+      body: JSON.stringify(componentsResult),
       skipContentLengthHeader: true,
     });
   });
 }
 
 function responseSaveResultComponents(message: IMessage) {
-  const response = message.body;
-  mainWindow.webContents.send("response_operation_save_results", response );
+  const wpResponse = JSON.parse(message.body);
+  if ((wpResponse as WpResponse).amountBoilerShiftMade !== undefined) {
+    mainWindow.webContents.send("response_operation_save_results", wpResponse);
+    mainWindow.webContents.send("response_amount_made_boiler_shift", wpResponse.amountBoilerShiftMade);
+    return;
+  }
+  mainWindow.webContents.send("response_operation_save_results",  {message: "Ошибка"});
+}
+
+function responseLastOperation(message: IMessage) {
+  let componentsResponse: ComponentsResponse | string;
+  try {
+    componentsResponse = JSON.parse(message.body);
+  } catch (error) {
+    componentsResponse = message.body;
+  }
+  if ((componentsResponse as ComponentsResponse).boilerTypeCycle !== undefined) {
+    stateMain.isRunCycle = true;
+  }
+  mainWindow.webContents.send("response_last_operation_after_close", componentsResponse);
 }

@@ -120,10 +120,7 @@ const UserAuthorization = () => {
         <Text hidden={!isUserAuthorization.value} style={{ fontSize: "23px" }}>
           {userAuthorization.value.username}
         </Text>
-        <Text hidden={!isLoadingUserAuthorization.value} style={{ fontSize: "23px" }}>
-          Загрузка...
-        </Text>
-        <Button onClick={() => {
+        <Button loading={isLoadingUserAuthorization.value} onClick={() => {
           if (isUserAuthorization.value) {
             isUserAuthorization.value = false;
             userAuthorization.value = { username: "", token: "" };

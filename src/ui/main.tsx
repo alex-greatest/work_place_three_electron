@@ -1,4 +1,4 @@
-import { createContext, StrictMode, Suspense } from "react";
+import { createContext, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "@mantine/core/styles.css";
@@ -8,7 +8,6 @@ import "@mantine/notifications/styles.css";
 import "./css/index.css";
 import { Notifications } from "@mantine/notifications";
 import { ModalsProvider } from '@mantine/modals';
-import Loading from "./components/Loading.tsx";
 
 const appStore = createAppStore();
 export const context = createContext<StoreApp>(appStore);

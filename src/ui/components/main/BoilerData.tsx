@@ -15,14 +15,17 @@ export default function BoilerData() {
   const componentsResponse = contextApp.stateApp.componentsResponse;
   const isUserAuthorization = contextApp.stateApp.isUserAuthorization;
   const isRunCycle = contextApp.stateApp.isRunCycle;
-  const isGetCode = contextApp.stateApp.isGetCode;
+  const isNotResposenSaveResult = contextApp.stateApp.isNotResposenSaveResult;
+  const componentsResult = contextApp.stateApp.componenstResult;
+  const componenstResultRequest = contextApp.stateApp.componenstResultRequest;
+  const isWaitNewCycleStart = contextApp.stateApp.isWaitNewCycleStart;
+  const isInizializeRunCycle = contextApp.stateApp.isInizializeRunCycle;
 
   const form = useForm({
     mode: "uncontrolled",
     initialValues: {
       interruptedMessageText: "",
     },
-
     validate: {
       interruptedMessageText: (value: string) =>
         value.trim().length > 0 ? null : "Описание не может быть пустым",
@@ -34,6 +37,7 @@ export default function BoilerData() {
       title: "Ошибка",
       centered: true,
       children: <Text size="lg">{message}</Text>,
+      closeOnClickOutside: false,
       labels: { confirm: "Продолжить", cancel: "Отмена" },
       onCancel: () => console.log("Cancel"),
       onConfirm: () =>
@@ -47,13 +51,16 @@ export default function BoilerData() {
       componentSetDtoList: [] as ComponentSetDto[],
       componentBindingResponses: [] as ComponentBindingResponse[],
     };
-    isGetCode.value = false;
+    componenstResultRequest.value = [] as ComponentsResult[];
+    componentsResult.value = [] as ComponentsResult[];
+    window.syncState.requestMainStateReset();
     isRunCycle.value = false;
+    isInizializeRunCycle.value = false;
   }
 
   function requestInterruptedOperation(value: string) {
     close();
-    console.log(componentsResponse.value);
+    window.exchangeScanner.requestScannedComponentsAllowed(false);
     const interruptedRequest: InterruptedRequest = {
       serialNumber: componentsResponse.value.boilerTypeCycle.serialNumber,
       stationName: "",
@@ -90,6 +97,7 @@ export default function BoilerData() {
   }
 
   function responseComponent(_event: Electron.IpcRendererEvent, componentsResponseServer: ComponentsResponse | ComponentsErrorRoute) {
+    isNotResposenSaveResult.value = false;
     isExchangeServer.value = false;
     timerWaitComponents.current && clearTimeout(timerWaitComponents.current);
     timerWaitComponents.current = null;
@@ -109,26 +117,27 @@ export default function BoilerData() {
     showError("response_components", componentsResponseServer.error);
   }
 
-  function responseScanError(_event: Electron.IpcRendererEvent,message: string) {
+  function responseScanError(_event: Electron.IpcRendererEvent, message: string) {
     showError("response_scan_error", message, 5000);
   }
 
+  function responseScannedNewSerialNumber(_event: Electron.IpcRendererEvent, _: string) {
+    isWaitNewCycleStart.value = false;
+    resetState();
+  }
+
   useEffect(() => {
-    const removeListenerOnResponseComponentWait =
-      window.exchangeServerAPI.onResponseWait(responseComponentWait);
-    const removeListenerOnResponseScannerError =
-      window.exchangeScanner.onResponseScanError(responseScanError);
-    const removeListenerOnResponseComponent =
-      window.exchangeServerAPI.onResponseComponents(responseComponent);
-    const removeListenerOnResponseInterruptedOperation =
-      window.exchangeServerAPI.onResponseInterruptedOperation(
-        responseInterruptedOperation
-      );
+    const removeListenerOnResponseComponentWait = window.exchangeServerAPI.onResponseWait(responseComponentWait);
+    const removeListenerOnResponseScannerError = window.exchangeScanner.onResponseScanError(responseScanError);
+    const removeListenerOnResponseComponent = window.exchangeServerAPI.onResponseComponents(responseComponent);
+    const removeListenerOnResponseInterruptedOperation = window.exchangeServerAPI.onResponseInterruptedOperation(responseInterruptedOperation);
+    const removeListenerOnResponseScannedNewSerialNumber = window.exchangeScanner.onResponseScannedNewSerialNumber(responseScannedNewSerialNumber);
     return () => {
       removeListenerOnResponseComponentWait();
       removeListenerOnResponseComponent();
       removeListenerOnResponseScannerError();
       removeListenerOnResponseInterruptedOperation();
+      removeListenerOnResponseScannedNewSerialNumber();
       timerWaitComponents.current && clearTimeout(timerWaitComponents.current);
       timerWaitRequestInterrupted.current &&
         clearTimeout(timerWaitRequestInterrupted.current);
@@ -142,6 +151,7 @@ export default function BoilerData() {
       <Modal
         opened={opened}
         onClose={close}
+        closeOnClickOutside={false}
         title="Прерывание операции"
         size={"md"}
         withCloseButton={true}
@@ -182,7 +192,7 @@ export default function BoilerData() {
           <Button
             style={{ width: "18%", marginTop: "1.7em" }}
             color="red"
-            disabled={!isUserAuthorization.value || !isRunCycle.value}
+            disabled={!isUserAuthorization.value || !isRunCycle.value || isExchangeServer.value}
             onClick={open}
             variant="filled"
           >

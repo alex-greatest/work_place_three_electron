@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from "electron/renderer";
 
 contextBridge.exposeInMainWorld("exchangeServerAPI", {
-  requestGetLastBoilerOrderAfterClose: () => ipcRenderer.invoke("request_last_boiler_order_after_close"),
+  requestGetLastPartAfterClose: () => ipcRenderer.invoke("request_last_operation_after_close"),
   onUpdateConnectionServerState: (callback: callbackBoolean) => {
     const listener = (_event: Electron.IpcRendererEvent, value: boolean) => callback(_event, value);
     ipcRenderer.on("updater_connection_server_state", listener);
@@ -51,12 +51,17 @@ contextBridge.exposeInMainWorld("exchangeServerAPI", {
     ipcRenderer.on("response_interrupted_operation", listener);
     return () => { ipcRenderer.removeListener("response_interrupted_operation", listener); };
   },
-  requestSaveResultComponents: (componentsResult: ComponentsResult[]) => 
+  requestSaveResultComponents: (componentsResult: ComponentsResultRequest) => 
     ipcRenderer.invoke("request_operation_save_results", componentsResult),
-  onResponseSaveResultComponents: (callback: callbackErrorResponseString) => {
-    const listener = (_event: Electron.IpcRendererEvent, value: ErrorResponse | string) => callback(_event, value);
+  onResponseSaveResultComponents: (callback: callbackErrorResponseWpResponse) => {
+    const listener = (_event: Electron.IpcRendererEvent, value: ErrorResponse | WpResponse) => callback(_event, value);
     ipcRenderer.on("response_operation_save_results", listener);
     return () => { ipcRenderer.removeListener("response_operation_save_results", listener); };
+  },
+  onResponseLastPart: (callback: callbackComponentsResponseStr) => {
+    const listener = (_event: Electron.IpcRendererEvent, value: ComponentsResponse | string) => callback(_event, value);
+    ipcRenderer.on("response_last_operation_after_close", listener);
+    return () => { ipcRenderer.removeListener("response_last_operation_after_close", listener); };
   },
 });
 
@@ -87,6 +92,12 @@ contextBridge.exposeInMainWorld("exchangeScanner", {
     const listener = (_event: Electron.IpcRendererEvent, value: string) => callback(_event, value);
     ipcRenderer.on("response_scan_components", listener);
     return () => { ipcRenderer.removeListener("response_scan_components", listener); };
+  },
+  requestScannedNewSerialNumber: (isScan: boolean) => ipcRenderer.invoke("request_scan_new_serial_number", isScan),
+  onResponseScannedNewSerialNumber: (callback: callbackString) => {
+    const listener = (_event: Electron.IpcRendererEvent, value: string) => callback(_event, value);
+    ipcRenderer.on("response_scan_new_serial_number", listener);
+    return () => { ipcRenderer.removeListener("response_scan_new_serial_number", listener); };
   },
 });
 

@@ -8,15 +8,14 @@ export const stateMain: StateMain = {
   shiftNumber: 0,
   isServerConnected: false,
   isScannerConnected: false,
-  isPrinterConnected: false,
   isGetCode: false,
   isScannedComponentsAllowed: false,
-  isRunCycle: false
+  isRunCycle: false,
+  isScanNewSerialNumber: false
 };
 
 export function resteMainState() {
   ipcMain.handle("reset_main_state", (_event: Electron.IpcMainInvokeEvent) => {
-    resetOperatorCode();
     stateMain.isScannedComponentsAllowed = false;
     stateMain.isRunCycle = false;
   });

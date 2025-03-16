@@ -54,12 +54,6 @@ interface ComponentBindingResponse {
   order: number;
 }
 
-interface BoilerTypeStation {
-  id: number;
-  typeName: string;
-  article: string;
-}
-
 interface ComponentsResponse {
   boilerTypeCycle: BoilerTypeCycleStation;
   componentSetDtoList: ComponentSetDto[];
@@ -86,7 +80,13 @@ interface ComponentsResult {
 
 interface ComponentsResultRequest {
   componentsResult: ComponentsResult[];
+  serialNumber: string;
   stationName: string;
+  status: string;
+}
+
+interface WpResponse {
+  amountBoilerShiftMade: number;
 }
 
 type callbackBoolean = (_event: Electron.IpcRendererEvent, value: boolean) => void;
@@ -96,18 +96,17 @@ type callbackBoilerOrder = (_event: Electron.IpcRendererEvent, boilerOrder: Boil
 type callbackState = (_event: Electron.IpcRendererEvent, state: typeof StateApp ) => void;
 type callbackString = (_event: Electron.IpcRendererEvent, value: string) => void;
 type callbackAmountOrderPrintedResponse = (_event: Electron.IpcRendererEvent, shiftNumber: number) => void;
-type callbackBoilerResponse = (_event: Electron.IpcRendererEvent, boiler: Boiler|ErrorResponse) => void;
-type callbackBoilerHistory = (_event: Electron.IpcRendererEvent, boilers: BoilerPage|ErrorResponse) => void;
 type callbackBooleanError = (_event: Electron.IpcRendererEvent, error: boolean, errorMessage: string) => void;
 type callbackNumber = (_event: Electron.IpcRendererEvent, value: number) => void;
 type callbackUserAuthorization = (_event: Electron.IpcRendererEvent, userRequestAuthorization: UserRequestAuthorization) => void;
 type callbackEmpty = (_event: Electron.IpcRendererEvent) => void;
-type callbackComponentsResponse = (_event: Electron.IpcRendererEvent, componentsResponse: ComponentsResponse |ComponentsErrorRoute) => void;
+type callbackComponentsResponse = (_event: Electron.IpcRendererEvent, componentsResponse: ComponentsResponse | ComponentsErrorRoute) => void;
 type callbackErrorResponse = (_event: Electron.IpcRendererEvent, error: ErrorResponse) => void;
-type callbackErrorResponseString = (_event: Electron.IpcRendererEvent, error: ErrorResponse | string) => void;
+type callbackErrorResponseWpResponse = (_event: Electron.IpcRendererEvent, error: ErrorResponse | WpResponse) => void;
+type callbackComponentsResponseStr = (_event: Electron.IpcRendererEvent, componentsResponse: ComponentsResponse | string) => void;
 
 interface IExchangeServerAPI {
-  requestGetLastBoilerOrderAfterClose: () => void;
+  requestGetLastPartAfterClose: () => void;
   onUpdateConnectionServerState: (callback: callbackBoolean) => () => void;
   requestOperatorCode: (code: number) => void;
   onResponseOperatorCode: (callback: callbackUserResponse) => () => void;
@@ -116,14 +115,14 @@ interface IExchangeServerAPI {
   onResponseUserAuthorization: (callback: callbackUserResponse) => () => void;
   requestUserAuthorization: (userRequestAuthorization: UserRequestAuthorization) => void;
   requestSerialNumberAllowStart: (serialNumber: string) => void; 
-  onResponseLastBoiierOrder: (callback: callbackCanban) => () => void;
+  onResponseLastPart: (callback: callbackComponentsResponseStr) => () => void;
   onResponseAmountBoiler: (callback: callbackShiftResponse) => () => void;
   onResponseWait: (callback: callbackEmpty) => () => void;
   requestUserAuthorization: (userRequestAuthorization: UserRequestAuthorization) => void;
   requestInterruptedOperation: (interruptedRequest: InterruptedRequest) => void;
   onResponseInterruptedOperation: (callback: callbackErrorResponse) => () => void;
-  requestSaveResultComponents: (componentsResult: ComponentsResult[]) => void;
-  onResponseSaveResultComponents: (callback: callbackErrorResponseString) => () => void;
+  requestSaveResultComponents: (componentsResult: ComponentsResultRequest) => void;
+  onResponseSaveResultComponents: (callback: callbackErrorResponseWpResponse) => () => void;
 }
 
 interface IExchangeScanner {
@@ -132,6 +131,8 @@ interface IExchangeScanner {
   requestScanManual: (isScan: boolean) => () => void;
   requestScannedComponentsAllowed: (isScan: boolean) => () => void;
   onResponseScanСomponents: (callback: callbackString) => () => void;
+  requestScannedNewSerialNumber: (isScan: boolean) => () => void;
+  onResponseScannedNewSerialNumber: (callback: callbackString) => () => void;
 }
 
 interface ISyncState {
@@ -158,7 +159,6 @@ interface StateRender {
   isPrinterConnected: Signal<boolean>;
   textHelper: Signal<string>;
   isGetCode: Signal<boolean>;
-  isGetComponentsResponse: Signal<boolean>;
   componentsResponse: Signal<ComponentsResponse>;
   isUserAuthorization: Signal<boolean>;
   shift: Signal<number>,
@@ -172,6 +172,10 @@ interface StateRender {
   actualResultComponent: Singal<ComponentsResult>;
   actualNumberBindingComponent: Signal<number>;
   amountBindingComponent: Signal<number>;
+  isWaitNewCycleStart: Signal<boolean>;
+  stateResult: Signal<string>;
+  isNotResposenSaveResult: Signal<boolean>;
+  isErorrSaveResults: Signal<boolean>;
 }
 
 interface StateMain {
@@ -182,5 +186,6 @@ interface StateMain {
   isGetCode: boolean;
   isScannedComponentsAllowed: boolean;
   isRunCycle: boolean;
+  isScanNewSerialNumber: boolean;
 }
 
