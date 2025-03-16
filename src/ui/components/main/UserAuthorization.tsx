@@ -38,7 +38,7 @@ const UserAuthorization = () => {
     const userAuthorization = {
       login: values.login,
       password: values.password,
-      station: "wp2",
+      station: "",
     };
     window.exchangeServerAPI.requestUserAuthorization(userAuthorization);
     timerId.current = setTimeout(() => {
@@ -47,17 +47,13 @@ const UserAuthorization = () => {
     }, 20000);
   }
 
-  function responseUserAuthorization(
-    _event: Electron.IpcRendererEvent,
-    userResponse: UserResponse | ErrorResponse
-  ) {
-    console.log(userResponse);
+  function responseUserAuthorization(_event: Electron.IpcRendererEvent, userResponse: UserResponse | ErrorResponse) {
     isLoadingUserAuthorization.value = false;
+    timerId.current && clearTimeout(timerId.current);
+    timerId.current = null;
     if ((userResponse as UserResponse).username !== undefined) {
       userAuthorization.value = userResponse as UserResponse;
       isUserAuthorization.value = true;
-      timerId.current && clearTimeout(timerId.current);
-      timerId.current = null;
       dateAutologout.value = dayjs().add(1, "minute");
       timerAutoLogout.current = setTimeout(autoLogout, 5000);
       return;

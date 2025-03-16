@@ -32,8 +32,8 @@ export function createRequestComponents(serialNumber: string, allowStart: boolea
     numberShift: stateMain.shiftNumber,
     userCode: stateMain.user.code,
     serialNumber: serialNumber,
-    stationName: "wp2",
-    prevStationName: "wp1",
+    stationName: "wp3",
+    prevStationName: "GVL-test",
     isAllowStart: allowStart
   };
 }

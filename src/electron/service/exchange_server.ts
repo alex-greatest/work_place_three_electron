@@ -29,12 +29,12 @@ export function connect(_mainWindow: BrowserWindow) {
     subscribeError();
     client?.connected && client.publish({
       destination: "/app/shift/made/boiler/get_info/request",
-      body: "wp2",
+      body: "wp3",
       skipContentLengthHeader: true,
     });
     client?.connected && client.publish({
       destination: "/app/shift/get_info/request",
-      body: "wp2",
+      body: "wp3",
       skipContentLengthHeader: true,
     });
   };
@@ -66,35 +66,33 @@ export function disconnectServer() {
 }
 
 function subscribe() {
-  client.subscribe('/message/wp2/user/get_info/response', (message) => responseOperatorCode(message));
-  client.subscribe('/message/wp2/user/authorization/response', (message) => responseUserAuthorization(message));
-  client.subscribe('/message/wp2/shift/get_info/response', (message) => responseShift(message));
-  client.subscribe('/message/wp2/shift/amount/made/boiler/get_info/response', (message) => responseAmountBoilerShift(message));
-  client.subscribe('/message/station/wp2/operation/response', (message) => responseComponents(message));
-  client.subscribe('/message/station/wp2/operation/response', (message) => responseComponents(message));
-  client.subscribe('/message/station/wp2/interrupted/operation/response', (message) => responseInterruptedOperation(message));
+  client.subscribe('/message/wp3/user/get_info/response', (message) => responseOperatorCode(message));
+  client.subscribe('/message/wp3/user/authorization/response', (message) => responseUserAuthorization(message));
+  client.subscribe('/message/wp3/shift/get_info/response', (message) => responseShift(message));
+  client.subscribe('/message/wp3/shift/amount/made/boiler/get_info/response', (message) => responseAmountBoilerShift(message));
+  client.subscribe('/message/station/wp3/operation/response', (message) => responseComponents(message));
+  client.subscribe('/message/station/wp3/operation/response', (message) => responseComponents(message));
+  client.subscribe('/message/station/wp3/interrupted/operation/response', (message) => responseInterruptedOperation(message));
   client.subscribe('/message/current/shift', (message) => resetShift(message));
-  client.subscribe('/message/station/wp2/end/operation/response', (message) => responseSaveResultComponents(message));
-
-
-  client.subscribe('/message/station/wp2/operation/get/last/response', (message) => responseLastOperation(message));
+  client.subscribe('/message/station/wp3/end/operation/response', (message) => responseSaveResultComponents(message));
+  client.subscribe('/message/station/wp3/operation/get/last/response', (message) => responseLastOperation(message));
 }
 
 function subscribeError() {
-  client.subscribe('/message/wp2/user/get_info/errors', (message) => responseError(message, (messageResponse: string) => {
+  client.subscribe('/message/wp3/user/get_info/errors', (message) => responseError(message, (messageResponse: string) => {
     mainWindow.webContents.send("response_operator_code", {message: messageResponse} as ErrorResponse);
   }));
-  client.subscribe('/message/wp2/shift/get_info/errors', (message) => responseError(message, (messageResponse: string) => {
+  client.subscribe('/message/wp3/shift/get_info/errors', (message) => responseError(message, (messageResponse: string) => {
     mainWindow.webContents.send("response_shift", {message: messageResponse} as ErrorResponse);
   }));
-  client.subscribe('/message/wp2/shift/amount/made/boiler/get_info/errors', (message) => responseError(message, (messageResponse: string) => {  
+  client.subscribe('/message/wp3/shift/amount/made/boiler/get_info/errors', (message) => responseError(message, (messageResponse: string) => {  
     mainWindow.webContents.send("response_amount_made_boiler_shift", {message: messageResponse} as ErrorResponse);
   }));
-  client.subscribe('/message/wp2/user/authorization/errors', (message) => responseError(message, (messageResponse: string) => {
+  client.subscribe('/message/wp3/user/authorization/errors', (message) => responseError(message, (messageResponse: string) => {
     mainWindow.webContents.send("response_user_authorization", {message: messageResponse} as ErrorResponse);
   }));
-  client.subscribe('/message/station/wp2/start/operation/errors', (message) => responseErrorRoute(message));
-  client.subscribe('/message/station/wp2/end/operation/errors', (message) => responseError(message, (messageResponse: string) => {
+  client.subscribe('/message/station/wp3/start/operation/errors', (message) => responseErrorRoute(message));
+  client.subscribe('/message/station/wp3/end/operation/errors', (message) => responseError(message, (messageResponse: string) => {
     mainWindow.webContents.send("response_operation_save_results", {message: messageResponse} as ErrorResponse);
   }));
 }
@@ -103,7 +101,7 @@ function requestShift() {
   ipcMain.handle("request_shift", (_event: Electron.IpcMainInvokeEvent) => {
     client?.connected && client.publish({
       destination: "/app/shift/get_info/request",
-      body: "wp2",
+      body: "wp3",
       skipContentLengthHeader: true,
     });
   });
@@ -118,7 +116,7 @@ function requestAmountBoileramountShiftMadeBoiler() {
   ipcMain.handle("request_amount_boiler", (_event: Electron.IpcMainInvokeEvent) => {
     client?.connected && client.publish({
       destination: "/app/shift/made/boiler/get_info/request",
-      body: "wp2",
+      body: "wp3",
       skipContentLengthHeader: true,
     });
   });
@@ -133,7 +131,7 @@ function requestOperatorCode() {
   ipcMain.handle("request_operator_code", (_event: Electron.IpcMainInvokeEvent, code: number) => {
     client?.connected && client.publish({
       destination: '/app/user/get_info/request',
-      body: JSON.stringify({code: code, station: "wp2"}),
+      body: JSON.stringify({code: code, station: "wp3"}),
       skipContentLengthHeader: true,
     });
   });
@@ -188,6 +186,7 @@ function resetShift(message: IMessage) {
 
 function requestUserAuthorization() {
   ipcMain.handle("request_user_authorization", (_event: Electron.IpcMainInvokeEvent, userAuthorization: UserRequestAuthorization) => {
+    userAuthorization.station = "wp3";
     client?.connected && client.publish({
       destination: '/app/user/authorization/request',
       body: JSON.stringify(userAuthorization),
@@ -207,7 +206,7 @@ function requestLastOperation() {
   ipcMain.handle("request_last_operation_after_close", (_event: Electron.IpcMainInvokeEvent) => {
     client?.connected && client.publish({
       destination: '/app/station/start/operation/get/last/request',
-      body: "wp2",
+      body: "wp3",
       skipContentLengthHeader: true,
     });
   });
@@ -221,7 +220,7 @@ function requestSerialNumberAllowStart() {
 
 function requestInterruptedOperation() {
   ipcMain.handle("request_interrupted_operation", (_event: Electron.IpcMainInvokeEvent, interruptedOperation: InterruptedRequest) => {
-    interruptedOperation.stationName = "wp2";
+    interruptedOperation.stationName = "wp3";
     client?.connected && client.publish({
       destination: '/app/station/interrupted/operation/request',
       body: JSON.stringify(interruptedOperation),
@@ -237,7 +236,7 @@ function responseInterruptedOperation(message: IMessage) {
 
 function requestSaveResultComponents() {
   ipcMain.handle("request_operation_save_results", (_event: Electron.IpcMainInvokeEvent, componentsResult: ComponentsResultRequest) => {
-    componentsResult.stationName = "wp2";
+    componentsResult.stationName = "wp3";
     client?.connected && client.publish({
       destination: '/app/station/end/operation/request',
       body: JSON.stringify(componentsResult),
